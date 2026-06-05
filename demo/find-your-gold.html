@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Terminal demo · {{TITLE}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* =========================================================
+     TERMINAL DEMO ENGINE  (fixed — do not rewrite per deck)
+     One integer state (pos) drives the whole demo:
+       0                 launch slide (the slide before alt-tab)
+       1                 terminal up, boot prompt only (PS path> + caret)
+       2                 boot command typed + CLI booted
+       3..(2+N)          move 1..N
+       3+N               exit slide (the next slide)
+       4+N               closing ping reveal (only if CLOSING_PING set)
+     Everything is manual. No auto-advance. A single anim token
+     invalidates stale timers so nothing ever jumps.
+     Channel is namespaced by CONFIG.demoId so several demos can
+     live in one deck without their presenter windows crossing.
+     ========================================================= */
+  :root{
+    --bg:#0E1116; --bg-elev:#161B22; --bg-soft:#1A2028; --bg-card:#131820;
+    --fg:#ECE6DC; --fg-2:#BAB3A8; --fg-muted:#6B6760; --fg-weak:#3F3D38;
+    --border:#1F252D; --border-soft:#181D24;
+    --accent:#E0A971; --accent-2:#C98A4C; --accent-soft:rgba(224,169,113,.10); --accent-line:rgba(224,169,113,.35);
+    --t-green:#7FB069; --t-pink:#D24FA3; --t-pink2:#C849A1; --t-amber:#FACC15; --t-blue:#5E9EFF; --ok:#28C840;
+    --t-add:#7FB069; --t-del:#E0746B;
+    --mono:'JetBrains Mono',ui-monospace,'Cascadia Code',Consolas,monospace;
+    --disp:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --jak:'Plus Jakarta Sans',sans-serif;
+    --ease:cubic-bezier(.16,1,.3,1);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:radial-gradient(1200px 720px at 74% -14%,#171b22 0%,var(--bg) 60%);
+    color:var(--fg);font-family:var(--disp);overflow:hidden}
+
+  .ms-logo{position:fixed;top:22px;left:26px;display:flex;align-items:center;gap:9px;opacity:.82;z-index:5}
+  .ms-logo span{font-size:15px;font-weight:600;color:#c7ccd6;letter-spacing:.01em}
+
+  /* ---------------- Slides (launch + exit share .prevslide) ---------------- */
+  .stagewrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:6vh 24px}
+  .launch{display:flex;flex-direction:column;align-items:center;gap:26px;text-align:center;animation:fadeUp .5s var(--ease)}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  .prevslide{width:min(92vw,900px);text-align:left;animation:fadeUp .5s var(--ease)}
+  .prevslide .kick{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--fg-muted);margin-bottom:22px}
+  .prevslide .kick b{color:var(--accent);font-weight:600}
+  .prevslide h1{font-family:var(--jak);font-size:clamp(34px,5.4vw,62px);font-weight:800;letter-spacing:-.02em;line-height:1.05;color:var(--fg)}
+  .prevslide h1 .amber{color:var(--accent)}
+  .prevslide .psub{margin-top:20px;font-size:clamp(16px,2vw,20px);color:var(--fg-2);max-width:54ch;line-height:1.5}
+
+  .demo-launch{display:inline-flex;align-items:center;gap:14px;padding:14px 22px;cursor:pointer;
+    background:rgba(224,169,113,.06);border:1.5px solid var(--accent-line);border-radius:14px;color:var(--fg);
+    font-family:var(--disp);transition:transform .15s var(--ease),background .15s,border-color .15s}
+  .demo-launch:hover,.demo-launch:focus-visible{background:rgba(224,169,113,.12);border-color:var(--accent);transform:translateY(-2px);outline:none}
+  .app-icon{width:46px;height:46px;border-radius:11px;background:linear-gradient(160deg,#1B1F24,#0C0E11);
+    border:1px solid rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:20px;color:var(--t-pink);text-shadow:0 0 12px rgba(210,79,163,.55)}
+  .app-name{font-size:16px;font-weight:650;text-align:left}
+  .app-name small{display:block;font-family:var(--mono);font-size:11px;color:var(--fg-muted);font-weight:500;
+    letter-spacing:.05em;text-transform:uppercase;margin-top:2px}
+
+  #exitSlide{display:none}
+  #exitSlide.show{display:flex}
+
+  /* ---------------- Terminal overlay (alt-tab over the slide) ---------------- */
+  .overlay{position:fixed;inset:0;background:rgba(8,10,14,.58);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+    display:none;align-items:center;justify-content:center;padding:min(5vh,46px) 24px;z-index:30}
+  .overlay.show{display:flex;animation:scrim-in .42s var(--ease)}
+  @keyframes scrim-in{from{opacity:0}to{opacity:1}}
+  .overlay.show .cli{animation:winraise .5s var(--ease) both}
+  @keyframes winraise{from{opacity:0;transform:translateY(40px) scale(.95)}to{opacity:1;transform:none}}
+  .stage{position:relative;width:min(96vw,1140px);height:min(84vh,660px);display:flex}
+
+  .cli{flex:1;min-width:0;background:#0a0d12;border:1px solid #2A2F36;border-radius:11px;overflow:hidden;
+    display:flex;flex-direction:column;box-shadow:0 40px 100px rgba(0,0,0,.7)}
+  .cli-chrome{height:32px;flex-shrink:0;display:flex;align-items:center;gap:7px;padding:0 13px;background:#1A1F26;border-bottom:1px solid #2A2F36}
+  .cli-chrome .dot{width:10px;height:10px;border-radius:50%}
+  .cli-chrome .dot.r{background:#FF5F57}.cli-chrome .dot.y{background:#FEBC2E}.cli-chrome .dot.g{background:#28C840}
+  .cli-chrome .title{margin:0 auto;font-family:var(--mono);font-size:11px;color:#9CA3AF;letter-spacing:.04em}
+  .cli-term{flex:1;min-height:0;overflow-y:auto;padding:24px 26px 30px;font-family:var(--mono);font-size:14px;line-height:1.55;color:#D4D8DC;
+    scrollbar-width:none;-ms-overflow-style:none}
+  .cli-term::-webkit-scrollbar{width:0;height:0;display:none}
+
+  /* boot */
+  .boot-cmd{display:flex;align-items:baseline;gap:9px;margin-bottom:12px}
+  .boot-cmd .ps{color:var(--t-green);font-weight:600;flex-shrink:0}
+  .boot-cmd .typed{color:#E6E8EA;white-space:nowrap;overflow:hidden}
+  .caret{display:inline-block;width:8px;height:15px;background:var(--t-green);vertical-align:middle;margin-left:1px;animation:blink .9s steps(2) infinite}
+  @keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+  .cp-banner{margin:6px 0 4px;padding:10px 13px;background:rgba(28,18,28,.5);border:1.5px solid var(--t-pink2);border-radius:7px;
+    display:flex;align-items:center;gap:13px;opacity:0;transform:translateY(-3px);transition:opacity .35s,transform .35s}
+  .cp-banner.in{opacity:1;transform:none}
+  .cp-logo{width:34px;height:29px;flex-shrink:0;filter:drop-shadow(0 0 6px rgba(200,73,161,.35))}
+  .cp-brand .name{color:#E6E8EA;font-size:13px;font-weight:500}
+  .cp-brand .tag{color:var(--t-amber);font-size:12px}
+  .cp-status{display:flex;align-items:center;gap:9px;font-size:13px;color:#C5CBD1;opacity:0;margin-top:6px;transition:opacity .3s}
+  .cp-status.in{opacity:1}
+  .cp-status .dot{color:var(--t-blue);font-size:9px;line-height:1}
+  .cp-meta{display:flex;justify-content:space-between;font-size:12.5px;padding:7px 4px 2px;margin-top:5px;
+    border-top:1px solid rgba(255,255,255,.05);opacity:0;transition:opacity .3s}
+  .cp-meta.in{opacity:1}
+  .cp-meta .cwd{color:#9CA3AF}.cp-meta .model{color:#C5CBD1}
+
+  /* conversation feed */
+  .line{opacity:0;transform:translateY(3px);transition:opacity .3s,transform .3s}
+  .line.in{opacity:1;transform:none}
+  .moveblock{margin-top:20px}
+  .moveblock.first{margin-top:16px}
+  .move-meta{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);
+    margin-bottom:8px;opacity:.85}
+  .move-meta .est{color:var(--fg-muted)}
+  .ask-line{display:flex;align-items:flex-start;gap:9px}
+  .ask-line .ps{color:var(--t-pink);font-weight:700;text-shadow:0 0 5px rgba(210,79,163,.45);flex-shrink:0}
+  .ask-line .ask{color:#E6E8EA;white-space:pre-wrap;word-break:break-word}
+  .think{color:#6B7280;font-style:italic;padding-left:24px;font-size:.92em;margin-top:8px}
+  .think::before{content:'\2731 ';font-style:normal;color:#6B7280}
+  .agl{display:flex;align-items:baseline;gap:9px;margin-top:6px;padding-left:2px}
+  .agl .b{color:var(--accent);font-weight:700;width:13px;flex-shrink:0}
+  .tt{color:var(--t-pink);font-weight:600;font-size:11px;letter-spacing:.04em;padding:1px 7px;border-radius:4px;
+    background:rgba(210,79,163,.10);border:1px solid rgba(210,79,163,.22);flex-shrink:0;text-transform:lowercase}
+  .agl .txt{color:#C5CBD1;font-size:.95em}
+  .res{color:#cfd6e2;padding-left:25px;margin-top:6px;font-size:.95em;position:relative}
+  .res::before{content:'\21B3';position:absolute;left:6px;color:var(--fg-muted)}
+  .modepill{display:inline-block;margin-top:10px;font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    padding:3px 11px;border-radius:5px;color:#5ad17e;background:rgba(57,211,83,.10);border:1px solid rgba(57,211,83,.28)}
+
+  /* ---- artifact card (kinds: deck | code | dashboard | doc) ---- */
+  .card{margin:24px 0 8px;background:#0B0F14;border:1px solid rgba(255,255,255,.06);border-radius:11px;overflow:hidden;
+    box-shadow:0 30px 60px rgba(0,0,0,.6), 0 6px 14px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.4);
+    opacity:0;transform:translateY(22px) scale(.92);transition:opacity .55s var(--ease),transform .55s cubic-bezier(.34,1.56,.64,1);
+    font-family:var(--disp)}
+  .card.in{opacity:1;transform:none}
+  .card-chrome{height:32px;display:flex;align-items:center;justify-content:center;background:#1A1F26;border-bottom:1px solid #2A2F36;position:relative;padding:0 12px}
+  .card-chrome::before{content:'';position:absolute;left:13px;top:50%;width:10px;height:10px;border-radius:50%;
+    background:#FF5F57;box-shadow:17px 0 0 #FEBC2E,34px 0 0 #28C840;transform:translateY(-50%)}
+  .card-chrome .url{background:#0B0F14;border:1px solid #2A2F36;padding:4px 16px;border-radius:3px;
+    font-family:var(--mono);font-size:10.5px;color:#9CA3AF;letter-spacing:.03em}
+  .card-body{background:linear-gradient(180deg,#11161D,#0B0F14);padding:22px 22px 18px}
+  .card-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:4px}
+  .card-foot .meta{font-size:12.5px;color:var(--fg-2)}
+  .card-foot .meta b{color:var(--fg);font-weight:600}
+  .ppill{font-family:var(--mono);font-size:12px;color:var(--accent);display:inline-flex;align-items:center;gap:7px;
+    border:1px solid var(--accent-line);border-radius:8px;padding:6px 11px;background:var(--accent-soft)}
+  /* deck */
+  .deckmini{display:flex;gap:8px;margin-bottom:14px}
+  .sl{flex:1;border:1px solid var(--border);border-radius:7px;height:58px;background:rgba(255,255,255,.02);
+    display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;padding:6px}
+  .sl b{font-family:var(--jak);font-size:15px;font-weight:800;color:var(--accent);line-height:1}
+  .sl span{font-size:8.5px;color:var(--fg-muted);text-align:center;line-height:1.2}
+  .sl.story b{color:var(--fg);font-size:11px;font-weight:700}
+  /* code */
+  .codemini{font-family:var(--mono);font-size:12px;line-height:1.5;margin-bottom:12px}
+  .codemini .cl{display:flex;gap:10px;padding:1px 6px;border-radius:3px}
+  .codemini .cl .g{width:14px;flex:none;text-align:center;color:var(--fg-muted)}
+  .codemini .cl.add{background:rgba(127,176,105,.10)} .codemini .cl.add .t{color:var(--t-add)} .codemini .cl.add .g{color:var(--t-add)}
+  .codemini .cl.del{background:rgba(224,116,107,.10)} .codemini .cl.del .t{color:var(--t-del)} .codemini .cl.del .g{color:var(--t-del)}
+  .codemini .cl .t{color:#C5CBD1;white-space:pre}
+  /* dashboard */
+  .dashmini{display:flex;gap:8px;margin-bottom:14px}
+  .tile{flex:1;border:1px solid var(--border);border-radius:8px;padding:12px 10px;background:rgba(255,255,255,.02);text-align:center}
+  .tile b{display:block;font-family:var(--jak);font-size:20px;font-weight:800;color:var(--accent);line-height:1.1}
+  .tile span{font-size:9px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.06em}
+  /* doc */
+  .docmini{margin-bottom:12px}
+  .docmini h4{font-family:var(--jak);font-size:16px;font-weight:800;color:var(--fg);margin-bottom:8px}
+  .docmini p{font-size:12px;color:var(--fg-2);line-height:1.5;margin-bottom:6px}
+  .docmini .bar{height:7px;border-radius:4px;background:rgba(255,255,255,.05);margin-bottom:6px}
+  .docmini .bar.s{width:70%} .docmini .bar.m{width:88%}
+
+  /* ---------------- Closing ping (optional) ---------------- */
+  .wa-ping{position:fixed;top:40px;right:40px;width:392px;max-width:36vw;background:#1F2C34;color:#E9EDEF;
+    border-radius:16px;padding:15px 17px;box-shadow:0 22px 60px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.07);
+    font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;z-index:40;
+    opacity:0;transform:translateX(125%) translateY(-8px);pointer-events:none;display:none}
+  .wa-ping.live{display:block}
+  .wa-ping.in{animation:wa-in .58s cubic-bezier(.22,1,.36,1) forwards}
+  @keyframes wa-in{0%{opacity:0;transform:translateX(125%) translateY(-8px)}60%{opacity:1}100%{opacity:1;transform:translateX(0) translateY(0)}}
+  .wa-ping .wa-head{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+  .wa-ping .wa-logo{width:28px;height:28px;flex:none}
+  .wa-ping .wa-app{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:#8FA6B2;font-weight:700}
+  .wa-ping .wa-time{margin-left:auto;font-size:12px;color:#8FA6B2}
+  .wa-ping .wa-from{font-size:15.5px;font-weight:700;color:#fff;margin-bottom:3px}
+  .wa-ping .wa-msg{font-size:14.5px;line-height:1.46;color:#D6DEE2}
+  .wa-ping .wa-msg b{color:#fff;font-weight:700}
+
+  /* ---------------- Presenter view ---------------- */
+  body.presenter .stagewrap,body.presenter .overlay,body.presenter .ms-logo,body.presenter .wa-ping{display:none!important}
+  .pv{display:none;position:fixed;inset:0;background:var(--bg);color:var(--fg);padding:40px 48px;flex-direction:column;gap:20px}
+  body.presenter .pv{display:flex}
+  .pv-top{display:flex;align-items:baseline;gap:16px;border-bottom:1px solid var(--border);padding-bottom:16px}
+  .pv-step{font-family:var(--mono);font-size:13px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase}
+  .pv-est{font-family:var(--mono);font-size:13px;color:var(--fg-muted)}
+  .pv-title{font-family:var(--jak);font-size:30px;font-weight:800;letter-spacing:-.01em}
+  .pv-ask{font-family:var(--mono);font-size:16px;color:#E6E8EA;background:var(--bg-card);border:1px solid var(--border);
+    border-left:3px solid var(--t-pink);border-radius:8px;padding:14px 18px;line-height:1.5}
+  .pv-ask .lbl{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-muted);margin-bottom:7px}
+  .pv-say{font-size:21px;line-height:1.55;color:var(--fg);max-width:62ch}
+  .pv-say .lbl{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-muted);margin-bottom:9px}
+  .pv-rail{margin-top:auto;display:flex;gap:7px;flex-wrap:wrap}
+  .pv-rail .pvr{font-family:var(--mono);font-size:11px;padding:5px 11px;border-radius:999px;border:1px solid var(--border);color:var(--fg-muted)}
+  .pv-rail .pvr.done{color:#5ad17e;border-color:rgba(57,211,83,.3)}
+  .pv-rail .pvr.now{color:#1a1205;background:var(--accent);border-color:var(--accent);font-weight:600}
+  .pv-ctrl{display:flex;align-items:center;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+  .pv-ctrl button{font-family:var(--mono);font-size:13px;padding:10px 18px;border-radius:9px;border:1px solid var(--border);
+    background:rgba(255,255,255,.04);color:var(--fg);cursor:pointer;transition:border-color .15s,color .15s}
+  .pv-ctrl button:hover{border-color:var(--accent);color:var(--accent)}
+  .pv-ctrl button.primary{background:var(--accent);color:#1a1205;border-color:var(--accent);font-weight:700}
+  .pv-ctrl .hint{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--fg-muted);letter-spacing:.05em}
+  .pv-ctrl .hint kbd{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:4px;padding:1px 6px;color:var(--fg-2);margin:0 2px}
+
+  /* ---------------- Build-2026-gold additions ---------------- */
+  /* hero pixel image on launch + exit slides */
+  .hero-img{display:block;width:min(64vw,560px);height:auto;border-radius:16px;
+    box-shadow:0 26px 70px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.04);
+    image-rendering:pixelated;image-rendering:-moz-crisp-edges}
+  .exit-hero{width:min(58vw,500px)}
+  .launch .prevslide,#exitSlide .prevslide{text-align:center}
+  .launch .prevslide h1,#exitSlide .prevslide h1{margin-left:auto;margin-right:auto}
+  .launch .prevslide .psub,#exitSlide .prevslide .psub{margin-left:auto;margin-right:auto}
+
+  /* QR + share strip on the exit slide */
+  .share{display:flex;align-items:center;gap:22px;margin-top:18px;padding:18px 22px;
+    background:rgba(224,169,113,.06);border:1.5px solid var(--accent-line);border-radius:14px}
+  .share .qr{width:118px;height:118px;flex-shrink:0;background:#fff;border-radius:9px;padding:8px;display:flex;align-items:center;justify-content:center}
+  .share .qr img{width:100%;height:100%;image-rendering:pixelated;display:block}
+  .share .qrtext{display:flex;flex-direction:column;gap:4px;text-align:left}
+  .share .qrtext .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--fg-muted)}
+  .share .qrtext .url{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:600;letter-spacing:.01em}
+  .share .qrtext .h{font-family:var(--jak);font-size:18px;font-weight:700;color:var(--fg);line-height:1.2}
+
+  /* gallery card kind: 2 rows x 3 tiles, image/icon + label + status pill */
+  .gallerymini{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:12px}
+  .gtile{border:1px solid var(--border);border-radius:9px;overflow:hidden;
+    background:rgba(255,255,255,.02);display:flex;flex-direction:column;align-items:stretch}
+  .gtile .gimg{height:72px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-bottom:1px solid var(--border-soft)}
+  .gtile .gimg img{width:100%;height:100%;object-fit:cover;display:block}
+  .gtile .gimg .gicon{font-size:30px;line-height:1;filter:drop-shadow(0 2px 5px rgba(0,0,0,.4))}
+  .gtile .glabel{padding:8px 8px 4px;font-size:11.5px;color:var(--fg);font-weight:600;line-height:1.25;text-align:center}
+  .gtile .gpill{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+    padding:2px 7px;margin:0 auto 8px;border-radius:99px;border:1px solid transparent}
+  .gtile.cool .gimg{background:linear-gradient(135deg,#21183a,#0c0c1a)}
+  .gtile.cool .gpill{color:#a3b1ff;background:rgba(94,158,255,.10);border-color:rgba(94,158,255,.30)}
+  .gtile.act  .gimg{background:linear-gradient(135deg,#1a2818,#0c130a)}
+  .gtile.act  .gpill{color:#9ed386;background:rgba(127,176,105,.10);border-color:rgba(127,176,105,.32)}
+
+  /* bottom input bar — pinned, like real Copilot CLI */
+  .cli-input{flex-shrink:0;border-top:1px solid #1f2329;background:#0d1117;
+    padding:13px 18px;font-family:var(--mono);font-size:14px;line-height:1.4;min-height:28px}
+  .cli-input .ips{color:var(--t-pink);font-weight:700;text-shadow:0 0 5px rgba(210,79,163,.45);margin-right:10px}
+  .cli-input .ityped{color:#E6E8EA;white-space:pre-wrap;word-break:break-word}
+  .cli-input .icaret{display:inline-block;width:8px;height:15px;background:var(--t-green);
+    vertical-align:middle;margin-left:1px;animation:blink .9s steps(2) infinite}
+  .cli-hint{flex-shrink:0;padding:6px 18px;background:#0d1117;border-top:1px solid #1f2329;
+    font-family:var(--mono);font-size:10.5px;color:#5a6270;display:flex;justify-content:space-between;letter-spacing:.04em}
+
+  /* card popup overlay - sits ON TOP of the terminal, above the input bar */
+  .card-stage{position:absolute;left:34px;right:34px;bottom:96px;z-index:20;
+    opacity:0;pointer-events:none;
+    transform:translateY(28px) scale(.92);
+    transition:opacity .5s var(--ease),transform .55s cubic-bezier(.34,1.56,.64,1);
+    max-height:calc(100% - 160px)}
+  .card-stage.in{opacity:1;transform:none}
+  .card-stage .card{margin:0;opacity:1;transform:none;
+    box-shadow:0 40px 90px rgba(0,0,0,.75), 0 8px 18px rgba(0,0,0,.5), 0 0 0 1px rgba(0,0,0,.55)}
+  /* cards rendered inline in the term feed the stage only; don't show them in the scroll */
+  .cli-term .card{display:none}
+
+  /* Build pixel logo as the launch slide hero */
+  .build-hero{display:block;width:min(38vw,260px);height:auto;margin:0 auto 28px;
+    image-rendering:pixelated;image-rendering:-moz-crisp-edges;
+    filter:drop-shadow(0 14px 32px rgba(0,0,0,.5))}
+</style>
+</head>
+<body>
+
+  <div class="ms-logo" aria-label="Microsoft">
+    <svg width="20" height="20" viewBox="0 0 23 23" aria-hidden="true">
+      <rect x="1" y="1" width="10" height="10" fill="#F25022"/><rect x="12" y="1" width="10" height="10" fill="#7FBA00"/>
+      <rect x="1" y="12" width="10" height="10" fill="#00A4EF"/><rect x="12" y="12" width="10" height="10" fill="#FFB900"/>
+    </svg>
+    <span>Microsoft</span>
+  </div>
+
+  <!-- LAUNCH SLIDE (what's on screen before alt-tab) -->
+  <div class="stagewrap" id="launchSlide">
+    <div class="launch">
+      <img class="build-hero" src="../assets/build-pixel-logo.png" alt="Microsoft Build 2026">
+      <div class="prevslide">
+        <div class="kick" id="launchKick"></div>
+        <h1 id="launchH1"></h1>
+        <div class="psub" id="launchSub"></div>
+      </div>
+      <button class="demo-launch" id="launchBtn" type="button" aria-label="Copilot CLI">
+        <span class="app-icon" aria-hidden="true">&#10095;_</span>
+        <span class="app-name">Copilot CLI</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- TERMINAL OVERLAY -->
+  <div class="overlay" id="overlay" aria-hidden="true">
+    <div class="stage">
+      <div class="cli">
+        <div class="cli-chrome"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="title" id="cliTitle"></span></div>
+        <div class="cli-term" id="term"></div>
+        <div class="card-stage" id="cardStage" aria-hidden="true"></div>
+        <div class="cli-input" id="cliInput">
+          <span class="ips">&#10095;</span><span class="ityped" id="cliTyped"></span><span class="icaret" id="cliCaret"></span>
+        </div>
+        <div class="cli-hint"><span>tab autocomplete · enter to send</span><span id="cliMode">Autopilot</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXIT SLIDE (the next slide after the demo) -->
+  <div id="exitSlide" class="stagewrap">
+    <div class="launch">
+      <img class="hero-img exit-hero" src="../assets/johan-operator.png" alt="">
+      <div class="prevslide">
+        <div class="kick" id="exitKick"></div>
+        <h1 id="exitH1"></h1>
+        <p class="psub" id="exitSub"></p>
+      </div>
+      <div class="share">
+        <div class="qr"><img src="../assets/qr-build-2026-gold.png" alt="QR · build-2026-gold" onerror="this.style.display='none'"></div>
+        <div class="qrtext">
+          <span class="lbl">Scan or visit</span>
+          <span class="url" id="shareUrl">jw-sthlm.github.io/build-2026-gold</span>
+          <span class="h">5 prompts &middot; any AI chat &middot; your gold</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLOSING PING (optional; populated from spec) -->
+  <div class="wa-ping" id="waPing" aria-hidden="true">
+    <div class="wa-head">
+      <svg class="wa-logo" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="7" fill="#5059C9"/>
+        <path fill="#fff" d="M9 9h14v3.2h-5.4V23h-3.2V12.2H9z"/>
+        <circle cx="24.5" cy="11" r="3.2" fill="#7B83EB"/>
+      </svg>
+      <span class="wa-app" id="waApp">Teams</span>
+      <span class="wa-time">now</span>
+    </div>
+    <div class="wa-from" id="waFrom"></div>
+    <div class="wa-msg" id="waMsg"></div>
+  </div>
+
+  <!-- PRESENTER VIEW -->
+  <div class="pv" id="pv">
+    <div class="pv-top"><span class="pv-step" id="pvStep"></span><span class="pv-est" id="pvEst"></span><span class="pv-title" id="pvTitle"></span></div>
+    <div class="pv-ask" id="pvAskWrap"><span class="lbl">Prompt to send</span><span id="pvAsk"></span></div>
+    <div class="pv-say"><span class="lbl">Say</span><span id="pvSay"></span></div>
+    <div class="pv-rail" id="pvRail"></div>
+    <div class="pv-ctrl">
+      <button id="pvBack" type="button">&#9664; Back</button>
+      <button id="pvNext" class="primary" type="button">Advance &#9654;</button>
+      <button id="pvReset" type="button">Replay</button>
+      <span class="hint"><kbd>space</kbd> advance <kbd>&larr;</kbd> back <kbd>R</kbd> replay <kbd>Esc</kbd> close</span>
+    </div>
+  </div>
+
+<script>
+/* =====================================================================
+   ▼▼▼  SPEC — REPLACE THIS BLOCK PER DECK  ▼▼▼
+   This is the ONLY part the skill edits. The engine below is fixed.
+   - demoId   : unique per demo (namespaces the presenter channel).
+   - moves[]  : one object per advance. line kinds: think|tool|res|mode|card
+   - card     : { k:"card", kind:"deck|code|dashboard|doc", data:{...} }
+   - notes[]  : presenter note per pos. index 0=launch, 1=terminal up,
+                2=boot, 3..=moves, then exit, then ping (if any).
+   - closingPing: optional. Set to null to disable.
+   Default language is English. Tone/voice follow Johan's global voice
+   + content-humanizer skills (do NOT hard-code voice rules here).
+   ===================================================================== */
+window.DEMO_SPEC = {
+  config: {
+    demoId: "build-2026-gold",
+    title: "Find your gold",
+    cwd: "~/projects/partner-monday",
+    model: "claude-opus-4.7",
+    bootCmd: "copilot --yolo",
+    cliVer: "v1.0.60",
+    typeBoot: 48, typeAsk: 42, lineGap: 650, bootGap: 350
+  },
+  launchSlide: {
+    kick: "Build 2026 <b>&middot;</b> partner reality check",
+    h1: "From the buzz <span class=\"amber\">to your gold.</span>",
+    sub: "LinkedIn is on fire. 600 sessions on the catalogue. Half of it is brilliant. A small slice is actually yours. Let me show you how I find it on a Monday morning."
+  },
+  exitSlide: {
+    kick: "From the noise <b>&middot;</b> to your gold",
+    h1: "Now you're the <span class=\"amber\">operator.</span>",
+    sub: "Five prompts. Any AI chat. Your business, your customers, your move. Scan the code, grab the pack, run it on your own pipeline this week."
+  },
+  moves: [
+    { title:"Pull from the source", est:"1 min",
+      ask:"Find Build 2026 announcements that matter for my niche. Primary blogs only. Cross-check against my recent customer signals. Cite the source.",
+      lines:[
+        {k:"think", t:"my partner profile is loaded. niche. recent customer calls. open deals. start from there\u2026"},
+        {k:"tool", tag:"workiq", t:"read \u00b7 partner-profile.md \u00b7 12 customer calls \u00b7 8 open deals"},
+        {k:"tool", tag:"fetch", t:"devblogs.microsoft.com/foundry \u00b7 Build 2026 recap"},
+        {k:"tool", tag:"fetch", t:"github.blog \u00b7 GitHub Copilot app announcement"},
+        {k:"tool", tag:"fetch", t:"azure.microsoft.com/blog \u00b7 Microsoft Discovery GA"},
+        {k:"tool", tag:"fetch", t:"blogs.bing.com \u00b7 Microsoft Web IQ"},
+        {k:"res",  t:"12 agentic announcements pulled \u00b7 source-cited \u00b7 cross-referenced to your accounts"},
+        {k:"res",  t:"status tagged \u00b7 GA / preview / concept reveal"},
+        {k:"card", kind:"doc", data:{
+          url:"localhost / build-2026-source-list.md",
+          title:"12 agentic announcements \u00b7 from the source",
+          paras:[
+            "1. Microsoft Foundry \u00b7 hosted agents, toolboxes, memory \u00b7 devblogs",
+            "2. GitHub Copilot app \u00b7 My Work, Canvas, Agent Merge \u00b7 github.blog",
+            "3. Microsoft Discovery \u00b7 GA + Discovery app preview \u00b7 azure blog",
+            "4. Microsoft IQ + Web IQ \u00b7 grounding layer \u00b7 bing blog",
+            "5. Agent 365 \u00b7 identity, security, lifecycle \u00b7 tech community",
+            "6. Agent Framework 1.0 \u00b7 .NET + Python GA \u00b7 devblogs",
+            "7. Project Solara \u00b7 AI-native hardware concept",
+            "8. MAI models \u00b7 Image, Voice, Thinking, Code",
+            "bar"
+          ],
+          foot:"<b>12 items</b> \u00b7 sources cited \u00b7 zero LinkedIn takes",
+          pill:"\u2713 primary sources only"
+        }}
+      ]},
+    { title:"Sort: cool vs yours", est:"2 min",
+      ask:"Now sort them. Two buckets. Cool moonshots versus things that change my partner business this quarter. Brutal honesty.",
+      lines:[
+        {k:"think", t:"every announcement is exciting. very few change anything on Monday\u2026"},
+        {k:"tool", tag:"reason", t:"scoring on partner impact \u00b7 12 items \u00b7 18s"},
+        {k:"res",  t:"split \u00b7 4 moonshots \u00b7 4 yours this quarter \u00b7 4 in the middle"},
+        {k:"res",  t:"showing the extremes \u00b7 moonshots make headlines, the others make pipeline"},
+        {k:"card", kind:"gallery", data:{
+          url:"localhost / build-2026-sorted.md",
+          tiles:[
+            {kind:"cool", icon:"\uD83D\uDEF8", label:"Project Solara"},
+            {kind:"cool", icon:"\u269B\uFE0F", label:"Majorana 2"},
+            {kind:"cool", icon:"\uD83C\uDFA8", label:"MAI Image / Voice"},
+            {kind:"cool", icon:"\uD83E\uDDEC", label:"Frontier Tuning &middot; Mayo"},
+            {kind:"act",  icon:"\uD83D\uDEE0\uFE0F", label:"GitHub Copilot app"},
+            {kind:"act",  icon:"\uD83D\uDEE1\uFE0F", label:"Agent 365"},
+            {kind:"act",  icon:"\uD83C\uDFED", label:"Foundry Hosted Agents"},
+            {kind:"act",  icon:"\uD83E\uDDF1", label:"Copilot SDK"}
+          ],
+          foot:"<b>8 of 12</b> \u00b7 the extremes \u00b7 the other 4 sit in the middle bucket",
+          pill:"\u26A0 cool is not the same as yours"
+        }}
+      ]},
+    { title:"Customer conversation", est:"1.5 min",
+      ask:"Take three of the actionable ones I can lead with. For each, give me the customer conversation I should be having next week. One opening line, the objection it kills, the next step.",
+      lines:[
+        {k:"think", t:"every customer call this week could open with one of these\u2026"},
+        {k:"tool", tag:"reason", t:"mapping each item to a real account concern"},
+        {k:"res",  t:"3 opening lines \u00b7 3 objections killed \u00b7 3 next steps"},
+        {k:"card", kind:"doc", data:{
+          url:"localhost / customer-conversations.md",
+          title:"3 conversations \u00b7 ready for next week",
+          paras:[
+            "<b>Copilot app</b> &rarr; \"Your devs are already using agents. Let's make it governed.\" Kills the shadow-AI objection. Next: 60-min review.",
+            "<b>Agent 365</b> &rarr; \"You asked who owns the agents. There's now an answer.\" Kills the lifecycle blocker. Next: 3-week readiness sprint.",
+            "<b>Foundry production</b> &rarr; \"Your pilot is ready to leave the lab.\" Kills the prototype-trap. Next: production architecture workshop.",
+            "bar"
+          ],
+          foot:"<b>3 hooks</b> \u00b7 one for each actionable announcement",
+          pill:"\u2192 ready to send"
+        }}
+      ]},
+    { title:"Build me an offer", est:"1.5 min",
+      ask:"Take the biggest one. Agent 365. Package it as a three-week, fixed-price partner offer my team can pitch on Monday. Real deliverables, not a discovery call.",
+      lines:[
+        {k:"think", t:"a real offer needs an artefact, not a meeting invite\u2026"},
+        {k:"tool", tag:"plan", t:"3-week scope \u00b7 deliverables \u00b7 price band \u00b7 reusable IP"},
+        {k:"res",  t:"Agent 365 Readiness Sprint \u00b7 3 weeks \u00b7 fixed price"},
+        {k:"res",  t:"self-critique \u00b7 the IP doc is the moat, not the assessment"},
+        {k:"card", kind:"doc", data:{
+          url:"localhost / agent-365-readiness-sprint.md",
+          title:"Agent 365 Readiness Sprint \u00b7 3 weeks \u00b7 fixed price",
+          paras:[
+            "<b>Week 1</b> \u00b7 Inventory all agents in scope. Map to Entra, Purview, Defender posture. Identify the 5 biggest gaps.",
+            "<b>Week 2</b> \u00b7 Build the governance baseline. Identity model. Lifecycle policy. Approval workflow. Real deliverables, not slides.",
+            "<b>Week 3</b> \u00b7 Pilot one production agent end-to-end. Hand over the runbook. Train the customer team.",
+            "<b>Take-aways</b> &rarr; governance playbook, agent inventory tool, one live governed agent.",
+            "bar"
+          ],
+          foot:"<b>Fixed price</b> \u00b7 2 deliverables \u00b7 reusable IP next time",
+          pill:"\u00A3 ready to quote"
+        }}
+      ]},
+    { title:"Make me the source", est:"1.5 min",
+      ask:"Last one. Draft a LinkedIn post and a customer email so I'm teaching this. Not forwarding Microsoft links. My voice, zero corporate buzzwords. Reference my Agent 365 offer.",
+      lines:[
+        {k:"think", t:"my voice not Microsoft voice. real example from a real account\u2026"},
+        {k:"tool", tag:"write", t:"linkedin \u00b7 one thought, no hashtags, 180 words"},
+        {k:"tool", tag:"write", t:"email \u00b7 one customer \u00b7 six lines"},
+        {k:"res",  t:"drafts ready \u00b7 your voice \u00b7 zero buzzwords \u00b7 humaniser passed"},
+        {k:"card", kind:"doc", data:{
+          url:"localhost / be-the-source.md",
+          title:"LinkedIn post + customer email \u00b7 your voice",
+          paras:[
+            "<b>LinkedIn</b> &rarr; \"Every partner I talked to this week asked the same thing about Build. Who actually owns these agents once they're live? Microsoft just shipped the answer. Here's how we're packaging it for our customers.\u2026\"",
+            "<b>Email to Nordic Bank</b> &rarr; \"Hi Anders, you raised the agent ownership question on our last call. Microsoft just released Agent 365. We've built a 3-week sprint around it. Want 15 min Friday?\"",
+            "bar"
+          ],
+          foot:"<b>2 artefacts</b> \u00b7 ready to post and send",
+          pill:"\u2192 you're now the source"
+        }}
+      ]}
+  ],
+  notes: [
+    { step:"Setup", est:"~9 min", title:"Find your gold", ask:null,
+      say:"Quick scene. It's Monday morning after Build. My LinkedIn is on fire. Twelve emails. Six webinar invites. Six hundred sessions in the catalogue. Half of it is brilliant. And honestly, most of it is not for me this quarter. So this is what I actually do. One terminal. Five prompts. About nine minutes. Watch what comes out the other end." },
+    { step:"Terminal", est:"", title:"copilot CLI", ask:null,
+      say:"There it is. Same Copilot CLI I run every day. Just the prompt blinking. No prepared file. No safety net. Same tool any of you can pick up after this call." },
+    { step:"Boot", est:"", title:"copilot --yolo", ask:"copilot --yolo",
+      say:"I launch in yolo mode so it just runs. One second. Loads my instructions, my partner profile, my niche, signals from the last two weeks of customer calls and open deals. The agent is now context-aware. Watch what that does to the answers." },
+    { step:"Move 1", est:"1 min", title:"Pull from the source", ask:null,
+      say:"First move sets the rule. The agent already loaded my partner profile, my niche, and what my customers have actually been asking me. So I tell it. Pull Build announcements that matter for my niche. Primary blogs only. Cross-check against my recent customer signals. Because if I'm going to bet a Friday meeting on this, I want it grounded in what I actually do, not generic Microsoft excitement." },
+    { step:"Move 2", est:"2 min", title:"Sort: cool vs yours", ask:null,
+      say:"Now the hard one. Sort them. Cool moonshots versus things that change my Monday. Look at the screen. Solara is amazing. MAI Image, gorgeous. Mayo Clinic tuning, science fiction. Cool? Yes. Changing my customer conversation next week? No. Move on. And then the other column. Copilot app, Agent 365, Foundry. Those three I can act on this quarter. Brutal honesty is the move." },
+    { step:"Move 3", est:"1.5 min", title:"Customer conversation", ask:null,
+      say:"Now I translate. I pick three of the four and turn each into a conversation. Not a feature pitch. An opening line, the objection it kills, the next step. Look at Agent 365. Every customer I've talked to in the last six months has asked who owns these things once they're live. There is now an actual answer. That's a Friday meeting." },
+    { step:"Move 4", est:"1.5 min", title:"Build me an offer", ask:null,
+      say:"Now we go from conversation to commerce. Take the biggest one, Agent 365, and package it as a three-week fixed-price sprint. With real deliverables. A governance playbook. An inventory tool. One live governed agent. That's something my team can sell on Monday. Not a discovery call. An actual offer." },
+    { step:"Move 5", est:"1.5 min", title:"Make me the source", ask:null,
+      say:"And the last one is the move that actually compounds. Stop forwarding Microsoft links to your network. Be the source. A LinkedIn post in my voice. A short email to one customer who asked the right question last call. The agents are not the differentiator. Being the one teaching this on your patch is." },
+    { step:"Next slide", est:"", title:"Now you're the operator", ask:null,
+      say:"Nine minutes. One terminal. Five prompts. From six hundred Build sessions to three customer conversations, one new partner offer, and a LinkedIn post in my voice. And the prompts are right there. Scan the code or grab the link. Five prompts. They work in any AI chat. ChatGPT, Claude, Copilot, Gemini, or the CLI if you want the whole thing as one command. Run it on your own pipeline this week." },
+    { step:"The ping", est:"", title:"It pays off", ask:null,
+      say:"And here's the kicker. One more click. That's a real partner answer to the kind of LinkedIn post we just drafted. From six hundred sessions to a Friday meeting with the Head of AI at a Nordic bank. That is what becoming the source looks like." }
+  ],
+  closingPing: {
+    app: "Teams",
+    from: "Head of AI \u00b7 Nordic Bank",
+    msg: "Saw your post on <b>Agent 365</b>. Finally an answer to the ownership question. Got 15 min Friday?",
+    note: "The payoff. One click after the exit slide and the Teams ping slides in. Read it aloud. Smile. From a LinkedIn post to a Friday meeting. That is what being the source looks like."
+  }
+};
+/* =====================================================================
+   ▲▲▲  END SPEC  ▲▲▲
+   ===================================================================== */
+
+(function(){
+  const SPEC = window.DEMO_SPEC;
+  const CONFIG = SPEC.config;
+  const MOVES = SPEC.moves;
+  const PRES = SPEC.notes;
+  const PING = SPEC.closingPing || null;
+
+  /* ----- position model ----- */
+  const FIRST_MOVE_POS = 3;
+  const LAST_MOVE_POS  = FIRST_MOVE_POS + MOVES.length - 1;
+  const EXIT_POS       = LAST_MOVE_POS + 1;
+  const PING_POS       = EXIT_POS + 1;
+  const LAST_POS       = PING ? PING_POS : EXIT_POS;
+  function moveIndexFor(pos){ return pos - FIRST_MOVE_POS; }
+
+  /* ----- presenter sync (namespaced per demo) ----- */
+  const CHANNEL='terminal-demo-'+CONFIG.demoId;
+  const isPresenter = location.search.indexOf('presenter')!==-1;
+  let channel=null; try{ channel=new BroadcastChannel(CHANNEL); }catch(e){}
+
+  /* ----- refs ----- */
+  const overlay=document.getElementById('overlay');
+  const term=document.getElementById('term');
+  const launchSlide=document.getElementById('launchSlide');
+  const exitSlide=document.getElementById('exitSlide');
+  const waPing=document.getElementById('waPing');
+
+  /* ----- paint the static slide copy + chrome from spec ----- */
+  document.title='Terminal demo \u00b7 '+CONFIG.title;
+  document.getElementById('cliTitle').innerHTML='copilot &middot; '+CONFIG.cwd;
+  document.getElementById('launchKick').innerHTML=SPEC.launchSlide.kick;
+  document.getElementById('launchH1').innerHTML=SPEC.launchSlide.h1;
+  document.getElementById('launchSub').innerHTML=SPEC.launchSlide.sub;
+  document.getElementById('exitKick').innerHTML=SPEC.exitSlide.kick;
+  document.getElementById('exitH1').innerHTML=SPEC.exitSlide.h1;
+  document.getElementById('exitSub').innerHTML=SPEC.exitSlide.sub;
+  if(PING){
+    waPing.classList.add('live');
+    document.getElementById('waApp').textContent=PING.app||'WhatsApp';
+    document.getElementById('waFrom').textContent=PING.from||'';
+    document.getElementById('waMsg').innerHTML=PING.msg||'';
+  }
+
+  /* ----- state ----- */
+  let curPos=0, animating=false, animToken=0, timers=[];
+  function T(fn,ms){ const id=setTimeout(fn,ms); timers.push(id); return id; }
+  function clearT(){ timers.forEach(clearTimeout); timers=[]; }
+  function scroll(){
+    const blocks = term.querySelectorAll('.moveblock');
+    if(blocks.length){
+      let spacer = term.querySelector('.term-spacer');
+      if(!spacer){ spacer = document.createElement('div'); spacer.className='term-spacer'; }
+      if(spacer.parentNode !== term || spacer !== term.lastElementChild){ term.appendChild(spacer); }
+      spacer.style.height = Math.round(term.clientHeight * 0.75) + 'px';
+      const last = blocks[blocks.length-1];
+      term.scrollTop = Math.max(0, last.offsetTop - 14);
+    } else {
+      const spacer = term.querySelector('.term-spacer');
+      if(spacer) spacer.remove();
+      term.scrollTop = term.scrollHeight;
+    }
+  }
+  function clearCardStage(){
+    const stage=document.getElementById('cardStage');
+    if(!stage) return;
+    stage.classList.remove('in');
+    setTimeout(function(){ if(!stage.classList.contains('in')) stage.innerHTML=''; },600);
+  }
+  function showCardStage(html){
+    const stage=document.getElementById('cardStage');
+    if(!stage) return;
+    stage.innerHTML=html;
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ stage.classList.add('in'); }); });
+  }
+  function syncCardStage(pos){
+    const stage=document.getElementById('cardStage');
+    if(!stage) return;
+    if(pos<FIRST_MOVE_POS || pos>LAST_MOVE_POS){ stage.classList.remove('in'); stage.innerHTML=''; return; }
+    const idx=moveIndexFor(pos);
+    if(idx<0){ stage.classList.remove('in'); stage.innerHTML=''; return; }
+    const m=MOVES[idx];
+    const cardLine=(m.lines||[]).find(function(l){return l.k==='card';});
+    if(!cardLine){ stage.classList.remove('in'); stage.innerHTML=''; return; }
+    stage.innerHTML=cardHTML(cardLine,true);
+    stage.classList.add('in');
+  }
+
+  /* ----- bottom input bar (pinned, like real Copilot CLI) ----- */
+  function inputSet(text){
+    const t=document.getElementById('cliTyped');
+    if(t) t.textContent=text||'';
+  }
+  function inputClear(){ inputSet(''); }
+  function inputShow(yes){
+    const bar=document.getElementById('cliInput');
+    const hint=document.querySelector('.cli-hint');
+    if(bar)  bar.style.display  = yes?'block':'none';
+    if(hint) hint.style.display = yes?'flex':'none';
+  }
+
+  /* ----- html builders ----- */
+  const CPLOGO='<svg class="cp-logo" viewBox="0 0 60 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'+
+    '<rect x="8" y="3" width="14" height="14" rx="3" stroke="#4DD0E1" stroke-width="2.5" fill="none"/>'+
+    '<rect x="38" y="3" width="14" height="14" rx="3" stroke="#4DD0E1" stroke-width="2.5" fill="none"/>'+
+    '<rect x="10" y="20" width="10" height="10" fill="#C849A1"/><rect x="40" y="20" width="10" height="10" fill="#C849A1"/>'+
+    '<rect x="4" y="29" width="52" height="18" rx="3" fill="#C849A1"/>'+
+    '<rect x="22" y="34" width="4" height="8" fill="#39D353"/><rect x="34" y="34" width="4" height="8" fill="#39D353"/></svg>';
+
+  function bootPromptHTML(typed,caret){
+    return '<div class="boot-cmd"><span class="ps">PS '+CONFIG.cwd+'&gt;</span>'+
+      '<span class="typed" id="bootTyped">'+(typed||'')+'</span>'+
+      (caret?'<span class="caret"></span>':'')+'</div>';
+  }
+  function bannerHTML(vis){
+    const c=vis?' in':'';
+    return '<div class="cp-banner'+c+'">'+CPLOGO+'<div class="cp-brand"><div class="name">Copilot '+CONFIG.cliVer+' uses AI.</div><div class="tag">/experimental</div></div></div>'+
+      '<div class="cp-status'+c+'"><span class="dot">\u25CF</span><span>Loaded env: .github/copilot-instructions.md</span></div>'+
+      '<div class="cp-status'+c+'"><span class="dot">\u25CF</span><span>Loaded context: partner-profile.md \u00b7 niche &middot; solution focus</span></div>'+
+      '<div class="cp-status'+c+'"><span class="dot">\u25CF</span><span>Loaded signals: 12 customer calls &middot; 8 open deals &middot; last 14 days</span></div>'+
+      '<div class="cp-meta'+c+'"><span class="cwd">'+CONFIG.cwd+'</span><span class="model">'+CONFIG.model+'</span></div>';
+  }
+  function cardHTML(l,vis){
+    const kind=l.kind||'deck'; const d=l.data||{};
+    let inner='';
+    if(kind==='deck'){
+      inner='<div class="deckmini">'+(d.slides||[]).map(function(s){
+        return '<div class="sl'+(s.story?' story':'')+'"><b>'+s.b+'</b><span>'+s.s+'</span></div>'; }).join('')+'</div>';
+    } else if(kind==='code'){
+      inner='<div class="codemini">'+(d.lines||[]).map(function(c){
+        const cls=c.type==='add'?'add':(c.type==='del'?'del':'');
+        const g=c.type==='add'?'+':(c.type==='del'?'-':'');
+        return '<div class="cl '+cls+'"><span class="g">'+g+'</span><span class="t">'+c.t+'</span></div>'; }).join('')+'</div>';
+    } else if(kind==='dashboard'){
+      inner='<div class="dashmini">'+(d.tiles||[]).map(function(t){
+        return '<div class="tile"><b>'+t.b+'</b><span>'+t.s+'</span></div>'; }).join('')+'</div>';
+    } else if(kind==='doc'){
+      inner='<div class="docmini"><h4>'+(d.title||'')+'</h4>'+(d.paras||[]).map(function(p){
+        return p==='bar'?'<div class="bar m"></div><div class="bar s"></div>':'<p>'+p+'</p>'; }).join('')+'</div>';
+    } else if(kind==='gallery'){
+      inner='<div class="gallerymini">'+(d.tiles||[]).map(function(t){
+        const cls=t.kind==='cool'?'cool':'act';
+        const pill=t.pill||(t.kind==='cool'?'cool \u00b7 later':'yours \u00b7 this quarter');
+        const visual=t.img?'<img src="'+t.img+'" alt="">':('<span class="gicon">'+(t.icon||'')+'</span>');
+        return '<div class="gtile '+cls+'"><div class="gimg">'+visual+'</div><div class="glabel">'+t.label+'</div><span class="gpill">'+pill+'</span></div>';
+      }).join('')+'</div>';
+    }
+    const foot=d.foot?('<div class="card-foot"><span class="meta">'+d.foot+'</span>'+(d.pill?'<span class="ppill">'+d.pill+'</span>':'')+'</div>'):'';
+    return '<div class="card'+(vis?' in':'')+'"><div class="card-chrome"><span class="url">'+(d.url||'')+'</span></div>'+
+      '<div class="card-body">'+inner+foot+'</div></div>';
+  }
+  function lineHTML(l,vis){
+    const v=vis?' in':'';
+    if(l.k==='think') return '<div class="line think'+v+'">'+l.t+'</div>';
+    if(l.k==='res')   return '<div class="line res'+v+'">'+l.t+'</div>';
+    if(l.k==='mode')  return '<div class="line modepill'+v+'">\u25CF '+l.t+'</div>';
+    if(l.k==='tool')  return '<div class="line agl'+v+'"><span class="b">\u2726</span><span class="tt">'+l.tag+'</span><span class="txt">'+l.t+'</span></div>';
+    if(l.k==='card')  return cardHTML(l,vis);
+    return '';
+  }
+  function moveHTML(m,i,vis){
+    let h='<div class="moveblock'+(i===0?' first':'')+'" data-move="'+i+'">';
+    h+='<div class="move-meta">Move '+(i+1)+' \u00b7 '+m.title+' <span class="est">\u00b7 '+m.est+'</span></div>';
+    h+='<div class="ask-line"><span class="ps">\u276F</span><span class="ask">'+(vis?m.ask:'')+'</span></div>';
+    m.lines.forEach(function(l){ h+=lineHTML(l,vis); });
+    h+='</div>';
+    return h;
+  }
+  function termHTML(pos){
+    if(pos<1) return '';
+    let h = bootPromptHTML(pos>=2?CONFIG.bootCmd:'', pos<2);
+    if(pos>=2) h += bannerHTML(true);
+    const last=Math.min(moveIndexFor(pos), MOVES.length-1);
+    for(let i=0;i<=last;i++){ h += moveHTML(MOVES[i],i,true); }
+    return h;
+  }
+
+  function typewrite(node,text,speed,tok,done){
+    let i=0; node.textContent='';
+    (function tick(){
+      if(tok!==animToken) return;
+      if(i<=text.length){ node.textContent=text.slice(0,i); i++; scroll(); T(tick,speed); }
+      else if(done) done();
+    })();
+  }
+
+  /* ----- screen visibility ----- */
+  function updateScreens(pos){
+    const wantOverlay = pos>=1 && pos<=LAST_MOVE_POS;
+    launchSlide.style.display = (pos<=LAST_MOVE_POS)?'flex':'none';
+    if(wantOverlay){
+      if(!overlay.classList.contains('show')){ overlay.classList.add('show'); overlay.setAttribute('aria-hidden','false'); }
+    } else {
+      overlay.classList.remove('show'); overlay.setAttribute('aria-hidden','true');
+    }
+    exitSlide.classList.toggle('show', pos>=EXIT_POS);
+    if(PING){ waPing.classList.toggle('in', pos>=PING_POS); }
+    // input bar is visible from boot onward (pos>=2) while terminal is on screen
+    inputShow(pos>=2 && pos<=LAST_MOVE_POS);
+    if(pos<FIRST_MOVE_POS) inputClear();
+  }
+
+  /* ----- the one render entry point ----- */
+  function renderTo(pos,animate){
+    pos=Math.max(0,Math.min(LAST_POS,pos));
+    animToken++; const tok=animToken; clearT(); animating=false;
+    curPos=pos;
+    updateScreens(pos);
+    if(pos===0){ syncCardStage(pos); broadcast(); return; }
+    if(!animate || pos===1 || pos>LAST_MOVE_POS){
+      term.innerHTML = termHTML(pos);
+      inputClear();
+      scroll(); syncCardStage(pos); broadcast(); return;
+    }
+    term.innerHTML = termHTML(pos-1);
+    syncCardStage(pos-1);
+    scroll();
+    if(pos===2){ animateBoot(tok); }
+    else { animateMove(moveIndexFor(pos),tok); }
+    broadcast();
+  }
+
+  function animateBoot(tok){
+    animating=true;
+    const banner=document.createElement('div'); banner.innerHTML=bannerHTML(false);
+    while(banner.firstChild) term.appendChild(banner.firstChild);
+    const typed=document.getElementById('bootTyped');
+    typewrite(typed, CONFIG.bootCmd, CONFIG.typeBoot, tok, function(){
+      if(tok!==animToken) return;
+      const caret=term.querySelector('.boot-cmd .caret'); if(caret) caret.remove();
+      const items=term.querySelectorAll('.cp-banner,.cp-status,.cp-meta');
+      let d=0;
+      items.forEach(function(n){ d+=CONFIG.bootGap; T(function(){ if(tok!==animToken) return; n.classList.add('in'); scroll(); }, d); });
+      T(function(){ if(tok!==animToken) return; animating=false; broadcast(); }, d+60);
+    });
+  }
+  function animateMove(i,tok){
+    animating=true;
+    clearCardStage();
+    inputClear();
+    // type the prompt into the BOTTOM INPUT BAR (real CLI position)
+    const typedEl=document.getElementById('cliTyped');
+    typewrite(typedEl, MOVES[i].ask, CONFIG.typeAsk, tok, function(){
+      if(tok!==animToken) return;
+      // brief beat after "enter" — clear the input, append the moveblock with ask filled, then stream agent lines
+      T(function(){
+        if(tok!==animToken) return;
+        inputClear();
+        const wrap=document.createElement('div'); wrap.innerHTML=moveHTML(MOVES[i],i,true);
+        const node=wrap.firstChild; term.appendChild(node);
+        // hide agent lines/card initially so they fade in in sequence
+        const reveals=node.querySelectorAll('.line, .card');
+        reveals.forEach(function(n){ n.classList.remove('in'); });
+        scroll();
+        let d=0;
+        reveals.forEach(function(n){
+          d+=CONFIG.lineGap;
+          T(function(){
+            if(tok!==animToken) return;
+            n.classList.add('in');
+            if(n.classList.contains('card')){ showCardStage(n.outerHTML); }
+            scroll();
+          }, d);
+        });
+        T(function(){ if(tok!==animToken) return; animating=false; broadcast(); }, d+60);
+      }, 220);
+    });
+  }
+
+  /* ----- drive ----- */
+  function advance(){ if(isPresenter) return; if(animating){ renderTo(curPos,false); return; } renderTo(curPos+1,true); }
+  function back(){ if(isPresenter) return; if(animating){ renderTo(curPos,false); return; } renderTo(curPos-1,false); }
+  function resetDemo(){ renderTo(0,false); }
+
+  /* ----- presenter broadcast / view ----- */
+  /* railData + pvPayload let an EXTERNAL deck-wide presenter render this
+     demo's rail and note without owning the SPEC. The rail is gated by the
+     host to the active slide, so several demos never pile up in one deck. */
+  function railData(idx){
+    const active = (idx>=FIRST_MOVE_POS && idx<=LAST_MOVE_POS) ? moveIndexFor(idx) : -1;
+    const done   = (idx>LAST_MOVE_POS) ? MOVES.length : Math.max(0, idx-FIRST_MOVE_POS);
+    return MOVES.map(function(m,i){
+      return { label:(i+1)+' \u00b7 '+m.title, state:(i===active?'now':(i<done?'done':'todo')) };
+    });
+  }
+  function pvPayload(idx){
+    const s=PRES[idx]||PRES[PRES.length-1];
+    return { demoId:CONFIG.demoId, idx:idx, total:LAST_POS,
+      step:s.step, est:s.est||'', title:s.title, ask:s.ask||null, say:s.say,
+      rail:railData(idx), atStart:(idx===0), atEnd:(idx>=LAST_POS) };
+  }
+  function broadcast(){ if(!channel) return; try{
+    channel.postMessage({type:'state', idx:curPos});
+    channel.postMessage({type:'pv', pv:pvPayload(curPos)});
+  }catch(e){} }
+  function renderPV(idx){
+    const s=PRES[idx]||PRES[PRES.length-1];
+    document.getElementById('pvStep').textContent=s.step;
+    document.getElementById('pvEst').textContent=s.est?('\u00b7 '+s.est):'';
+    document.getElementById('pvTitle').textContent=s.title;
+    const askWrap=document.getElementById('pvAskWrap');
+    if(s.ask){ askWrap.style.display=''; document.getElementById('pvAsk').textContent=s.ask; }
+    else { askWrap.style.display='none'; }
+    document.getElementById('pvSay').textContent=s.say;
+    const r=document.getElementById('pvRail'); r.innerHTML='';
+    const active = (idx>=FIRST_MOVE_POS && idx<=LAST_MOVE_POS) ? moveIndexFor(idx) : -1;
+    const done   = (idx>LAST_MOVE_POS) ? MOVES.length : Math.max(0, idx-FIRST_MOVE_POS);
+    MOVES.forEach(function(m,i){
+      const el=document.createElement('span'); el.className='pvr';
+      if(i<done) el.classList.add('done');
+      if(i===active) el.classList.add('now');
+      el.textContent=(i+1)+' \u00b7 '+m.title;
+      r.appendChild(el);
+    });
+  }
+  function sendCmd(action){ if(channel){ try{ channel.postMessage({type:'cmd', action:action}); }catch(e){} } }
+
+  /* ----- wire up ----- */
+  if(isPresenter){
+    document.body.classList.add('presenter');
+    renderPV(0);
+    document.getElementById('pvNext').addEventListener('click', function(){ sendCmd('advance'); });
+    document.getElementById('pvBack').addEventListener('click', function(){ sendCmd('back'); });
+    document.getElementById('pvReset').addEventListener('click', function(){ sendCmd('reset'); });
+    if(channel){
+      channel.onmessage=function(e){ if(e.data&&e.data.type==='state'){ renderPV(e.data.idx); } };
+      try{ channel.postMessage({type:'request'}); }catch(e){}
+    }
+  } else {
+    document.getElementById('launchBtn').addEventListener('click', function(){ advance(); });
+    if(channel){ channel.onmessage=function(e){
+      if(!e.data) return;
+      if(e.data.type==='request'){ broadcast(); return; }
+      if(e.data.type==='cmd'){
+        if(e.data.action==='advance') advance();
+        else if(e.data.action==='back') back();
+        else if(e.data.action==='reset') resetDemo();
+      }
+    }; }
+    updateScreens(0); broadcast();
+  }
+
+  function openPresenter(){ const w=window.open(location.pathname+'?presenter=1&demo='+encodeURIComponent(CONFIG.demoId),'pres-'+CONFIG.demoId,'width=1180,height=720'); if(w){ T(broadcast,500); T(broadcast,1200); } }
+
+  document.addEventListener('keydown', function(e){
+    if(e.key==='p'||e.key==='P'){ if(!isPresenter){ e.preventDefault(); openPresenter(); } return; }
+    if(isPresenter){
+      if(e.key===' '||e.key==='Enter'||e.key==='ArrowRight'||e.key==='ArrowDown'||e.key==='PageDown'){ e.preventDefault(); sendCmd('advance'); }
+      else if(e.key==='ArrowLeft'||e.key==='ArrowUp'||e.key==='PageUp'){ e.preventDefault(); sendCmd('back'); }
+      else if(e.key==='r'||e.key==='R'){ e.preventDefault(); sendCmd('reset'); }
+      return;
+    }
+    if(e.key==='r'||e.key==='R'){ e.preventDefault(); resetDemo(); return; }
+    if(e.key==='Escape'){ e.preventDefault(); resetDemo(); return; }
+    if(e.key===' '||e.key==='Enter'||e.key==='ArrowRight'||e.key==='ArrowDown'||e.key==='PageDown'){ e.preventDefault(); advance(); }
+    else if(e.key==='ArrowLeft'||e.key==='ArrowUp'||e.key==='PageUp'){ e.preventDefault(); back(); }
+  });
+})();
+</script>
+</body>
+</html>

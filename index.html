@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>build-2026-gold · find your gold in the Build 2026 noise</title>
+<meta name="description" content="Five prompts to turn the Build 2026 firehose into your customer conversations, your partner offer, and your LinkedIn post. Works in any AI chat. By Johan Wallquist for the EMEA Agentic AI partner community.">
+
+<!-- Open Graph -->
+<meta property="og:title" content="build-2026-gold · find your gold in the Build 2026 noise">
+<meta property="og:description" content="Five prompts. Nine minutes. Any AI chat. From the Build 2026 firehose to your customer conversations, your offer, your LinkedIn post.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jw-sthlm.github.io/build-2026-gold/">
+<meta property="og:image" content="https://jw-sthlm.github.io/build-2026-gold/assets/build-pixel-logo.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#0a0d12;--ink:#E6E8EA;--ink-2:#C5CBD1;--muted:#8a929c;--line:#23262d;
+  --accent:#FFB42E;--accent-soft:rgba(255,180,46,.10);--accent-line:rgba(255,180,46,.35);
+  --pink:#D24FA3;--pink-soft:rgba(210,79,163,.10);--green:#39D353;
+  --jak:'Plus Jakarta Sans',system-ui,sans-serif;--mono:'JetBrains Mono',Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--jak);
+  -webkit-font-smoothing:antialiased;font-size:16px;line-height:1.55}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(255,180,46,.3)}
+a:hover{border-bottom-color:var(--accent)}
+.wrap{max-width:920px;margin:0 auto;padding:48px 32px 80px}
+
+/* HERO */
+.hero{display:flex;flex-direction:column;align-items:flex-start;gap:18px;padding:32px 0 18px;border-bottom:1px solid var(--line)}
+.hero .logo{display:flex;align-items:center;gap:14px}
+.hero .logo img{width:72px;height:auto;image-rendering:pixelated;filter:drop-shadow(0 8px 18px rgba(0,0,0,.5))}
+.hero .logo .title{font-family:var(--mono);font-size:13px;letter-spacing:.05em;color:var(--muted);text-transform:uppercase}
+.hero .logo .title b{color:var(--accent)}
+.hero h1{margin:8px 0 6px;font-size:46px;line-height:1.08;font-weight:800;letter-spacing:-.01em}
+.hero h1 .amber{color:var(--accent)}
+.hero .sub{font-size:18px;color:var(--ink-2);max-width:680px}
+.hero .meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:13px;color:var(--muted);font-family:var(--mono)}
+.hero .meta span{padding:4px 10px;border:1px solid var(--line);border-radius:99px}
+
+/* CTA TILES */
+.cta-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:28px 0 12px}
+@media (max-width:780px){.cta-row{grid-template-columns:1fr}}
+.cta{background:#11151c;border:1px solid var(--line);border-radius:14px;padding:22px;text-decoration:none;color:var(--ink);
+  display:flex;flex-direction:column;gap:8px;transition:transform .2s,border-color .2s,background .2s;border-bottom:1px solid var(--line)}
+.cta:hover{transform:translateY(-2px);border-color:var(--accent-line);background:#161b24}
+.cta .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.cta h3{margin:0;font-size:20px;font-weight:700;letter-spacing:-.005em}
+.cta p{margin:0;font-size:14px;color:var(--ink-2)}
+.cta .arrow{margin-top:6px;font-family:var(--mono);font-size:13px;color:var(--accent)}
+
+/* SECTIONS */
+section{margin-top:56px}
+section h2{font-size:28px;font-weight:800;margin:0 0 6px;letter-spacing:-.01em}
+section h2 .num{display:inline-block;font-family:var(--mono);font-size:14px;color:var(--accent);
+  background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:6px;padding:2px 9px;margin-right:10px;vertical-align:middle;font-weight:600}
+section .lede{font-size:17px;color:var(--ink-2);max-width:680px;margin:0 0 22px}
+
+/* PROMPT LIST */
+.prompt-list{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+@media (max-width:780px){.prompt-list{grid-template-columns:1fr}}
+.prompt-item{display:flex;gap:14px;align-items:flex-start;padding:16px 18px;background:#11151c;border:1px solid var(--line);border-radius:11px}
+.prompt-item .n{font-family:var(--mono);font-size:18px;color:var(--accent);font-weight:700;flex-shrink:0;width:24px}
+.prompt-item .body b{display:block;font-size:15px;color:var(--ink);margin-bottom:3px}
+.prompt-item .body span{font-size:13.5px;color:var(--muted)}
+
+.btn{display:inline-block;padding:13px 22px;background:var(--accent);color:#1a1205;border-radius:8px;
+  font-weight:700;font-size:15px;border:none;cursor:pointer;border-bottom:none;
+  box-shadow:0 6px 18px rgba(255,180,46,.18)}
+.btn:hover{background:#ffc04d;border-bottom:none}
+.btn.alt{background:transparent;color:var(--accent);border:1px solid var(--accent-line);box-shadow:none}
+.btn.alt:hover{background:var(--accent-soft);border-color:var(--accent)}
+.btn-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}
+
+/* CODE BLOCK */
+pre{background:#0d1117;border:1px solid var(--line);border-radius:10px;padding:18px 20px;overflow-x:auto;
+  font-family:var(--mono);font-size:13px;line-height:1.55;color:#d4d8dc;margin:14px 0}
+code{font-family:var(--mono);font-size:.92em;color:var(--ink);background:rgba(255,255,255,.04);
+  padding:1px 6px;border-radius:4px}
+pre code{background:none;padding:0;border-radius:0;font-size:inherit;color:inherit}
+
+/* COMMUNITY BAND */
+.band{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
+@media (max-width:780px){.band{grid-template-columns:1fr}}
+.band .card{background:linear-gradient(180deg,#11151c,#0d1117);border:1px solid var(--line);border-radius:14px;padding:24px}
+.band .card .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--pink);margin-bottom:8px}
+.band .card.amber .kicker{color:var(--accent)}
+.band .card h3{margin:4px 0 8px;font-size:22px;font-weight:700;letter-spacing:-.005em}
+.band .card p{margin:0 0 14px;font-size:14.5px;color:var(--ink-2)}
+
+/* FOOTER */
+footer{margin-top:80px;padding-top:24px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-family:var(--mono)}
+footer a{color:var(--ink-2);border-bottom-color:transparent}
+footer a:hover{color:var(--accent);border-bottom-color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="logo">
+      <img src="./assets/build-pixel-logo.png" alt="Microsoft Build 2026 pixel logo">
+      <span class="title"><b>build-2026-gold</b></span>
+    </div>
+    <h1>From the Build 2026 firehose <span class="amber">to your gold.</span></h1>
+    <p class="sub">600 sessions. Twelve LinkedIn takes a day. Half of it brilliant, almost none of it yours this quarter. Five prompts to find the slice that actually moves your partner business. Works in any AI chat. About nine minutes.</p>
+    <div class="meta">
+      <span>5 prompts</span><span>~9 min</span><span>any AI chat</span><span>by Johan Wallquist</span>
+    </div>
+  </header>
+
+  <div class="cta-row">
+    <a class="cta" href="./prompts.md">
+      <span class="kicker">The giveaway</span>
+      <h3>The 5 prompts</h3>
+      <p>Universal. ChatGPT, Claude, Copilot, Gemini, the CLI. Copy, paste, run.</p>
+      <span class="arrow">prompts.md &rarr;</span>
+    </a>
+    <a class="cta" href="./demo/find-your-gold.html">
+      <span class="kicker">Watch the demo</span>
+      <h3>9-min terminal demo</h3>
+      <p>The same five prompts run end-to-end as a mocked Copilot CLI session. Press space to advance.</p>
+      <span class="arrow">find-your-gold.html &rarr;</span>
+    </a>
+    <a class="cta" href="./SKILL.md">
+      <span class="kicker">For CLI users</span>
+      <h3>One-command skill</h3>
+      <p>Wire the five prompts into the Copilot CLI as a single skill. Loads your partner context automatically.</p>
+      <span class="arrow">SKILL.md &rarr;</span>
+    </a>
+  </div>
+
+  <section>
+    <h2><span class="num">01</span>What's in the giveaway</h2>
+    <p class="lede">Five prompts in order. Each one builds on the last. You paste your partner context once at the top, then run them. The output is yours — files you can hand to your team on Monday.</p>
+    <div class="prompt-list">
+      <div class="prompt-item"><span class="n">1</span><div class="body"><b>Pull from the source</b><span>10-15 Build announcements grounded in your niche and your deals. Primary blogs only. Source-cited.</span></div></div>
+      <div class="prompt-item"><span class="n">2</span><div class="body"><b>Sort: cool vs yours</b><span>Brutal split. Moonshots one side, "mine this quarter" the other. Honesty over enthusiasm.</span></div></div>
+      <div class="prompt-item"><span class="n">3</span><div class="body"><b>Customer conversation</b><span>Three conversations ready for next week. Opening line, objection killed, concrete next step.</span></div></div>
+      <div class="prompt-item"><span class="n">4</span><div class="body"><b>Build me an offer</b><span>One packaged three-week fixed-price partner offer with deliverables your team can actually ship.</span></div></div>
+      <div class="prompt-item"><span class="n">5</span><div class="body"><b>Make me the source</b><span>A LinkedIn post in your voice and a six-line email to one customer. No corporate buzzwords.</span></div></div>
+    </div>
+    <div class="btn-row">
+      <a class="btn" href="./prompts.md">Open the 5 prompts &rarr;</a>
+      <a class="btn alt" href="./demo/find-your-gold.html">Watch the demo</a>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">02</span>Run it on the CLI</h2>
+    <p class="lede">If you use the Copilot CLI, the prompts ship as a single skill. Loads your partner context, runs the five moves, writes the outputs as files in your project.</p>
+    <pre><code>@build-2026-gold run</code></pre>
+    <p style="color:var(--ink-2);max-width:680px">The skill needs a <code>partner-profile.md</code> in your project root. Five lines is enough. Full schema in <a href="./SKILL.md">SKILL.md</a>.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">03</span>What's next</h2>
+    <div class="band">
+      <div class="card">
+        <div class="kicker">Join the community</div>
+        <h3>EMEA Agentic AI Partner Community</h3>
+        <p>Bi-weekly partner session for Microsoft EMEA. Live demos, reusable assets, partner-to-partner learning. We share work like this every two weeks. Free, partner-only.</p>
+        <a class="btn alt" href="https://forms.office.com/r/dJvVgJA8Wb">Sign up &rarr;</a>
+      </div>
+      <div class="card amber">
+        <div class="kicker">Go deeper with Frontier</div>
+        <h3>Frontier Consultancy</h3>
+        <p>Partner-facing positioning, workshops, and reusable IP for partners going agentic-first. If the five-prompt motion landed, that's the kind of work we package for partner teams.</p>
+        <a class="btn" href="https://jw-sthlm.github.io/frontier-consultancy-public/partners/">Open the partner page &rarr;</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>build-2026-gold &middot; built for the EMEA Agentic AI partner community</span>
+    <span><a href="https://github.com/JW-Sthlm/build-2026-gold">source on GitHub</a> &middot; <a href="https://www.linkedin.com/in/jwallquist/">Johan Wallquist</a></span>
+  </footer>
+</div>
+</body>
+</html>

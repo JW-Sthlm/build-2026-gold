@@ -1,0 +1,18 @@
+# Local
+.DS_Store
+Thumbs.db
+*.swp
+*.tmp
+
+# Editor
+.vscode/
+.idea/
+
+# Skill outputs (per-user, per-run)
+build-2026-gold/
+
+# Playwright artifacts
+_*.png
+_*.js
+playwright-report/
+test-results/
