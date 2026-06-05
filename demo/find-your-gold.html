@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   /* =========================================================
-     TERMINAL DEMO ENGINE  (fixed — do not rewrite per deck)
+     TERMINAL DEMO ENGINE  (fixed · do not rewrite per deck)
      One integer state (pos) drives the whole demo:
        0                 launch slide (the slide before alt-tab)
        1                 terminal up, boot prompt only (PS path> + caret)
@@ -249,7 +249,7 @@
   .gtile.act  .gimg{background:linear-gradient(135deg,#1a2818,#0c130a)}
   .gtile.act  .gpill{color:#9ed386;background:rgba(127,176,105,.10);border-color:rgba(127,176,105,.32)}
 
-  /* bottom input bar — pinned, like real Copilot CLI */
+  /* bottom input bar · pinned, like real Copilot CLI */
   .cli-input{flex-shrink:0;border-top:1px solid #1f2329;background:#0d1117;
     padding:13px 18px;font-family:var(--mono);font-size:14px;line-height:1.4;min-height:28px}
   .cli-input .ips{color:var(--t-pink);font-weight:700;text-shadow:0 0 5px rgba(210,79,163,.45);margin-right:10px}
@@ -370,7 +370,7 @@
 
 <script>
 /* =====================================================================
-   ▼▼▼  SPEC — REPLACE THIS BLOCK PER DECK  ▼▼▼
+   ▼▼▼  SPEC · REPLACE THIS BLOCK PER DECK  ▼▼▼
    This is the ONLY part the skill edits. The engine below is fixed.
    - demoId   : unique per demo (namespaces the presenter channel).
    - moves[]  : one object per advance. line kinds: think|tool|res|mode|card
@@ -790,7 +790,7 @@ window.DEMO_SPEC = {
     const typedEl=document.getElementById('cliTyped');
     typewrite(typedEl, MOVES[i].ask, CONFIG.typeAsk, tok, function(){
       if(tok!==animToken) return;
-      // brief beat after "enter" — clear the input, append the moveblock with ask filled, then stream agent lines
+      // brief beat after "enter" · clear the input, append the moveblock with ask filled, then stream agent lines
       T(function(){
         if(tok!==animToken) return;
         inputClear();

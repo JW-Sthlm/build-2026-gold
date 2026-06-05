@@ -3,7 +3,7 @@ name: build-2026-gold
 description: Find the Microsoft Build 2026 announcements that actually matter for YOUR partner business, then turn them into customer conversations, a packaged offer, and a LinkedIn post in your voice. Five prompts. About nine minutes. Use when you're a Microsoft partner who wants to cut through Build noise and find what's actually shippable for your customers this quarter.
 ---
 
-# build-2026-gold — find your gold in the Build 2026 noise
+# build-2026-gold · find your gold in the Build 2026 noise
 
 ## What this is
 
@@ -25,7 +25,7 @@ Use when:
 
 Do NOT use when:
 - You want a generic Build recap. Read [the prompts pack](./prompts.md) version, run it in any chat, done.
-- You don't have a partner profile yet. Write one first — five lines is enough.
+- You don't have a partner profile yet. Write one first · five lines is enough.
 
 ## Prerequisites
 
@@ -47,27 +47,27 @@ If you have signals in the project (customer call notes, email exports, deal log
 
 ## The five moves
 
-When invoked, the skill executes these in order. Each move waits for explicit "next" before continuing — you can stop, edit context, and resume.
+When invoked, the skill executes these in order. Each move waits for explicit "next" before continuing · you can stop, edit context, and resume.
 
-### Move 1 — Pull from the source
+### Move 1 · Pull from the source
 Tools: `fetch` against primary Microsoft blogs only (devblogs, github.blog, azure blog, bing blog, techcommunity, Foundry blog). Cross-checks against the partner profile and recent signals.
-Output: `build-2026-gold/01-source-list.md` — 10-15 announcements, status-tagged, source-cited, with one-line relevance note per item.
+Output: `build-2026-gold/01-source-list.md` · 10-15 announcements, status-tagged, source-cited, with one-line relevance note per item.
 
-### Move 2 — Sort: cool vs yours
+### Move 2 · Sort: cool vs yours
 Tool: `reason` over the source list.
-Output: `build-2026-gold/02-sorted.md` — two buckets, "Cool moonshots" vs "Mine this quarter", with one sentence per item in Bucket B explaining why it changes the conversation.
+Output: `build-2026-gold/02-sorted.md` · two buckets, "Cool moonshots" vs "Mine this quarter", with one sentence per item in Bucket B explaining why it changes the conversation.
 
-### Move 3 — Customer conversations
+### Move 3 · Customer conversations
 Tool: `reason` + `write`.
-Output: `build-2026-gold/03-conversations.md` — three account-specific conversations: opening line, objection killed, concrete next step.
+Output: `build-2026-gold/03-conversations.md` · three account-specific conversations: opening line, objection killed, concrete next step.
 
-### Move 4 — Build me an offer
+### Move 4 · Build me an offer
 Tool: `plan` + `write`.
-Output: `build-2026-gold/04-offer.md` — three-week fixed-price offer for the top item: name, weekly activities, deliverables, take-aways, reusable IP, price band, delivery roles.
+Output: `build-2026-gold/04-offer.md` · three-week fixed-price offer for the top item: name, weekly activities, deliverables, take-aways, reusable IP, price band, delivery roles.
 
-### Move 5 — Make me the source
+### Move 5 · Make me the source
 Tool: `write` with humaniser guard rails (no em dashes, no rule of three, no "leverage / unlock / transform", varied sentence rhythm).
-Output: `build-2026-gold/05-source.md` — a LinkedIn post (180 words max) and a six-line email to a specific customer.
+Output: `build-2026-gold/05-source.md` · a LinkedIn post (180 words max) and a six-line email to a specific customer.
 
 ## How to invoke
 
@@ -88,7 +88,7 @@ To run a single move:
 
 To re-run a single move with edits:
 ```
-@build-2026-gold revise move 3 — focus on the Nordic Bank deal specifically
+@build-2026-gold revise move 3 · focus on the Nordic Bank deal specifically
 ```
 
 ## Voice and quality rules baked in

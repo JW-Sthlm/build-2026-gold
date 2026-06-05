@@ -20,11 +20,11 @@ A giveaway for the EMEA Agentic AI partner community. Turns the Build 2026 fireh
 
 ## The five prompts in one line each
 
-1. **Pull from the source** — 10-15 announcements grounded in your business, primary blogs only
-2. **Sort: cool vs yours** — brutal split into moonshots vs "mine this quarter"
-3. **Customer conversation** — three real conversations ready for next week
-4. **Build me an offer** — one three-week fixed-price partner offer
-5. **Make me the source** — LinkedIn post + customer email in your voice
+1. **Pull from the source** · 10-15 announcements grounded in your business, primary blogs only
+2. **Sort: cool vs yours** · brutal split into moonshots vs "mine this quarter"
+3. **Customer conversation** · three real conversations ready for next week
+4. **Build me an offer** · one three-week fixed-price partner offer
+5. **Make me the source** · LinkedIn post + customer email in your voice
 
 Run them in order. Paste your partner context once at the top. The output is yours.
 
@@ -45,6 +45,6 @@ Built by [Johan Wallquist](https://www.linkedin.com/in/jwallquist/), Partner Sol
 
 ## License
 
-The prompts and skill are MIT licensed — fork, adapt, run them for any event. The terminal demo and landing page are CC-BY: credit the source if you reuse the artwork or copy.
+The prompts and skill are MIT licensed · fork, adapt, run them for any event. The terminal demo and landing page are CC-BY: credit the source if you reuse the artwork or copy.
 
 The motion (five prompts, nine minutes, find your gold) is yours to run on any future Microsoft event. Same shape works for Ignite, GitHub Universe, the next Build. Swap the source list. Keep the moves.

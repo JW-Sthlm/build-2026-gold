@@ -1,12 +1,12 @@
 # Five prompts to find your Build 2026 gold
 
-These five prompts mirror the live terminal demo from the EMEA Agentic AI community call. Run them in order. They work in any AI chat: **ChatGPT, Claude, Copilot, Gemini, Mistral, the Copilot CLI** — anywhere. About nine minutes end to end. Some chats with web search will give you more grounded results.
+These five prompts mirror the live terminal demo from the EMEA Agentic AI community call. Run them in order. They work in any AI chat: **ChatGPT, Claude, Copilot, Gemini, Mistral, the Copilot CLI** · anywhere. About nine minutes end to end. Some chats with web search will give you more grounded results.
 
 The point is not to learn Build 2026. The point is to find **your** gold inside it.
 
 ---
 
-## Before you start — paste this once
+## Before you start · paste this once
 
 The agent is only as useful as the context you give it. Spend two minutes filling this in, then paste it as your **first message**. Every prompt below works against this context.
 
@@ -30,7 +30,7 @@ points.
 
 ---
 
-## Prompt 1 — Pull from the source
+## Prompt 1 · Pull from the source
 
 ```
 Find the most important Microsoft Build 2026 announcements for MY
@@ -53,7 +53,7 @@ specifically.
 
 ---
 
-## Prompt 2 — Sort: cool vs yours
+## Prompt 2 · Sort: cool vs yours
 
 ```
 Now sort that list into two buckets. Be brutal.
@@ -76,7 +76,7 @@ conversation."
 
 ---
 
-## Prompt 3 — Customer conversation
+## Prompt 3 · Customer conversation
 
 ```
 Take the top 3 items from Bucket B.
@@ -96,7 +96,7 @@ Three conversations. Total under 250 words. Ready to send.
 
 ---
 
-## Prompt 4 — Build me an offer
+## Prompt 4 · Build me an offer
 
 ```
 Take the single biggest item from Bucket B - the one that maps to
@@ -120,7 +120,7 @@ actually produce in the time stated. No "comprehensive frameworks".
 
 ---
 
-## Prompt 5 — Make me the source
+## Prompt 5 · Make me the source
 
 ```
 Now make me the source, not the forwarder. Two artefacts.
