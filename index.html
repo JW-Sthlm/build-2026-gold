@@ -32,19 +32,19 @@ a:hover{border-bottom-color:var(--accent)}
 .wrap{max-width:920px;margin:0 auto;padding:48px 32px 80px}
 
 /* HERO */
-.hero{display:flex;flex-direction:column;align-items:flex-start;gap:18px;padding:32px 0 18px;border-bottom:1px solid var(--line)}
-.hero .logo{display:flex;align-items:center;gap:14px}
-.hero .logo img{width:72px;height:auto;image-rendering:pixelated;filter:drop-shadow(0 8px 18px rgba(0,0,0,.5))}
-.hero .logo .title{font-family:var(--mono);font-size:13px;letter-spacing:.05em;color:var(--muted);text-transform:uppercase}
-.hero .logo .title b{color:var(--accent)}
-.hero h1{margin:8px 0 6px;font-size:46px;line-height:1.08;font-weight:800;letter-spacing:-.01em}
+.hero{display:flex;flex-direction:column;align-items:flex-start;gap:18px;padding:18px 0 18px;border-bottom:1px solid var(--line)}
+.hero .pixel-word{width:100%;max-width:760px;height:auto;image-rendering:pixelated;
+  filter:drop-shadow(0 12px 28px rgba(0,0,0,.45));margin-bottom:6px}
+.hero .kicker{font-family:var(--mono);font-size:13px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.hero .kicker b{color:var(--accent)}
+.hero h1{margin:4px 0 6px;font-size:46px;line-height:1.08;font-weight:800;letter-spacing:-.01em}
 .hero h1 .amber{color:var(--accent)}
 .hero .sub{font-size:18px;color:var(--ink-2);max-width:680px}
 .hero .meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:13px;color:var(--muted);font-family:var(--mono)}
 .hero .meta span{padding:4px 10px;border:1px solid var(--line);border-radius:99px}
 
 /* CTA TILES */
-.cta-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:28px 0 12px}
+.cta-row{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:28px 0 12px}
 @media (max-width:780px){.cta-row{grid-template-columns:1fr}}
 .cta{background:#11151c;border:1px solid var(--line);border-radius:14px;padding:22px;text-decoration:none;color:var(--ink);
   display:flex;flex-direction:column;gap:8px;transition:transform .2s,border-color .2s,background .2s;border-bottom:1px solid var(--line)}
@@ -103,10 +103,8 @@ footer a:hover{color:var(--accent);border-bottom-color:var(--accent)}
 <div class="wrap">
 
   <header class="hero">
-    <div class="logo">
-      <img src="./assets/build-pixel-logo.png" alt="Microsoft Build 2026 pixel logo">
-      <span class="title"><b>build-2026-gold</b></span>
-    </div>
+    <img class="pixel-word" src="./assets/build-pixel-word.png" alt="Microsoft Build 2026">
+    <span class="kicker"><b>build-2026-gold</b> &middot; the partner playback</span>
     <h1>From the Build 2026 firehose <span class="amber">to your gold.</span></h1>
     <p class="sub">600 sessions. Twelve LinkedIn takes a day. Half of it brilliant, almost none of it yours this quarter. Five prompts to find the slice that actually moves your partner business. Works in any AI chat. About nine minutes.</p>
     <div class="meta">
@@ -128,10 +126,16 @@ footer a:hover{color:var(--accent);border-bottom-color:var(--accent)}
       <span class="arrow">find-your-gold.html &rarr;</span>
     </a>
     <a class="cta" href="https://github.com/JW-Sthlm/build-2026-gold/blob/main/SKILL.md">
-      <span class="kicker">For CLI users</span>
-      <h3>One-command skill</h3>
-      <p>Wire the five prompts into the Copilot CLI as a single skill. Loads your partner context automatically.</p>
+      <span class="kicker">Skill format</span>
+      <h3>Wire it as a skill</h3>
+      <p>Drop the five moves into Copilot CLI, Claude Code, Cursor, or any agent that loads skill files. One command, auto-context.</p>
       <span class="arrow">SKILL.md &rarr;</span>
+    </a>
+    <a class="cta" href="https://jw-sthlm.github.io/frontier-consultancy-public/partners/">
+      <span class="kicker">Go further</span>
+      <h3>Frontier Consultancy</h3>
+      <p>This kind of motion, packaged for your partner team. Workshops, positioning, reusable IP for going agentic-first.</p>
+      <span class="arrow">partners landing page &rarr;</span>
     </a>
   </div>
 
@@ -152,26 +156,26 @@ footer a:hover{color:var(--accent);border-bottom-color:var(--accent)}
   </section>
 
   <section>
-    <h2><span class="num">02</span>Run it on the CLI</h2>
-    <p class="lede">If you use the Copilot CLI, the prompts ship as a single skill. Loads your partner context, runs the five moves, writes the outputs as files in your project.</p>
+    <h2><span class="num">02</span>Run it as a skill</h2>
+    <p class="lede">If your agent loads skill files (Copilot CLI, Claude Code, Cursor, custom MCP host, anything that supports a SKILL.md), the five moves ship as a single command that loads your partner context automatically.</p>
     <pre><code>@build-2026-gold run</code></pre>
-    <p style="color:var(--ink-2);max-width:680px">The skill needs a <code>partner-profile.md</code> in your project root. Five lines is enough. Full schema in <a href="https://github.com/JW-Sthlm/build-2026-gold/blob/main/SKILL.md">SKILL.md</a>.</p>
+    <p style="color:var(--ink-2);max-width:680px">The skill needs a <code>partner-profile.md</code> in your project root. Five lines is enough. Full schema and tool routing in <a href="https://github.com/JW-Sthlm/build-2026-gold/blob/main/SKILL.md">SKILL.md</a>. Adapt the front-matter for whichever skill format your tool uses.</p>
   </section>
 
   <section>
-    <h2><span class="num">03</span>What's next</h2>
+    <h2><span class="num">03</span>Join the community</h2>
     <div class="band">
       <div class="card">
-        <div class="kicker">Join the community</div>
+        <div class="kicker">Bi-weekly partner session</div>
         <h3>EMEA Agentic AI Partner Community</h3>
-        <p>Bi-weekly partner session for Microsoft EMEA. Live demos, reusable assets, partner-to-partner learning. We share work like this every two weeks. Free, partner-only.</p>
+        <p>Live demos, reusable assets, partner-to-partner learning. We share work like this every two weeks. Free, partner-only. Microsoft EMEA.</p>
         <a class="btn alt" href="https://forms.office.com/r/dJvVgJA8Wb">Sign up &rarr;</a>
       </div>
       <div class="card amber">
-        <div class="kicker">Go deeper with Frontier</div>
-        <h3>Frontier Consultancy</h3>
-        <p>Partner-facing positioning, workshops, and reusable IP for partners going agentic-first. If the five-prompt motion landed, that's the kind of work we package for partner teams.</p>
-        <a class="btn" href="https://jw-sthlm.github.io/frontier-consultancy-public/partners/">Open the partner page &rarr;</a>
+        <div class="kicker">For your team</div>
+        <h3>Bring this motion in-house</h3>
+        <p>Frontier Consultancy packages this kind of agentic-first playback as workshops, IP, and partner positioning. The five-prompt motion is one of about ten in the catalogue.</p>
+        <a class="btn" href="https://jw-sthlm.github.io/frontier-consultancy-public/partners/">Frontier partners page &rarr;</a>
       </div>
     </div>
   </section>

@@ -5,14 +5,18 @@ description: Find the Microsoft Build 2026 announcements that actually matter fo
 
 # build-2026-gold · find your gold in the Build 2026 noise
 
+> Portable skill file. Drops into Copilot CLI, Claude Code, Cursor, or any agent that loads skills with YAML front matter.
+
 ## What this is
 
-A Copilot CLI skill that runs the same five-prompt motion as the [public prompts pack](./prompts.md), but wired up properly:
+A portable skill that runs the same five-prompt motion as the [public prompts pack](./prompts.md), but wired up properly:
 
 - Loads your partner context once (from `partner-profile.md` in your project root)
 - Runs the five prompts in order with the right tools at each step (`fetch` for primary blogs, `reason` for sorting, `write` for the artefacts)
 - Writes each output to `./build-2026-gold/` as a file you can hand to your team
 - Stays in YOUR voice (English by default, anti-buzzword guard rails baked in)
+
+Works in any agent that loads skill files with YAML front matter. Tested in **Copilot CLI**. The same SKILL.md drops cleanly into **Claude Code**, **Cursor**, custom **MCP hosts**, and any framework that follows the Anthropic / OpenAI / Microsoft skill convention. For tools without skill loaders (ChatGPT chat, Gemini chat, Claude.ai chat), use the [prompts pack](./prompts.md) directly. Same motion, no install.
 
 Total time on a warm cache: about nine minutes. Five prompts.
 
