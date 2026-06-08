@@ -201,11 +201,17 @@
   .pv-phase{margin-left:auto;font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.14em;
     padding:8px 16px;border-radius:999px;text-transform:uppercase;display:none}
   .pv-phase.arm{display:inline-block;background:rgba(74,158,255,.18);color:#7fb8ff;border:1px solid rgba(74,158,255,.5)}
+  .pv-phase.typed{display:inline-block;background:rgba(255,179,71,.18);color:#ffc888;border:1px solid rgba(255,179,71,.5)}
   .pv-phase.fire{display:inline-block;background:rgba(57,211,83,.18);color:#5ad17e;border:1px solid rgba(57,211,83,.5)}
   .pv-ask{font-family:var(--mono);font-size:16px;color:#E6E8EA;background:var(--bg-card);border:1px solid var(--border);
     border-left:3px solid var(--t-pink);border-radius:8px;padding:14px 18px;line-height:1.5}
   .pv-ask .lbl{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-muted);margin-bottom:7px}
   .pv-say{font-size:21px;line-height:1.55;color:var(--fg);max-width:62ch}
+  .pv-say p{margin:0 0 14px;padding:0 0 0 14px;border-left:3px solid transparent;transition:border-color .2s}
+  .pv-say p:last-child{margin-bottom:0}
+  .pv-say p.active.arm{border-left-color:rgba(74,158,255,.7)}
+  .pv-say p.active.typed{border-left-color:rgba(255,179,71,.7)}
+  .pv-say p.active.fire{border-left-color:rgba(57,211,83,.7)}
   .pv-say .lbl{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-muted);margin-bottom:9px}
   .pv-rail{margin-top:auto;display:flex;gap:7px;flex-wrap:wrap}
   .pv-rail .pvr{font-family:var(--mono);font-size:11px;padding:5px 11px;border-radius:999px;border:1px solid var(--border);color:var(--fg-muted)}
@@ -525,17 +531,17 @@ window.DEMO_SPEC = {
     { step:"Terminal", est:"", title:"copilot CLI", ask:null,
       say:"There it is. Same Copilot CLI I run every day. Just the prompt blinking. No prepared file. No safety net. Same tool any of you can pick up after this call." },
     { step:"Boot", est:"", title:"copilot --yolo", ask:"copilot --yolo",
-      say:"I launch in yolo mode so it just runs. One second. Loads my instructions, my partner profile, my niche, signals from the last two weeks of customer calls and open deals. The agent is now context-aware. Watch what that does to the answers." },
+      say:"I'm about to launch it. Yolo mode just means it runs without asking permission for every tool call. So I can show you the shape of the work, not the consent dialogs.\n\nNotice the command. copilot --yolo. Nothing else. No flags. No config file. Same line any of you would type on a Tuesday morning.\n\nAnd watch what loads. My instructions. Partner profile. My niche. Signals from the last two weeks of customer calls and open deals. The agent is now context-aware. That is what makes the next five prompts land." },
     { step:"Move 1", est:"1 min", title:"Pull from the source", ask:null,
-      say:"First move sets the rule. The agent already loaded my partner profile, my niche, and what my customers have actually been asking me. So I tell it. Pull Build announcements that matter for my niche. Primary blogs only. Cross-check against my recent customer signals. Because if I'm going to bet a Friday meeting on this, I want it grounded in what I actually do, not generic Microsoft excitement." },
+      say:"First move sets the rule. The agent already loaded my partner profile, my niche, and what my customers have actually been asking me. Now I tell it what to do with that.\n\nRead the prompt. Build announcements that matter for my niche. Primary blogs only. Cross-check against my recent customer signals. Not a generic Microsoft excitement dump.\n\nWatch the tool calls. It is pulling the blogs, then checking each announcement against my own pipeline. Because if I'm going to bet a Friday meeting on this, I want it grounded in what I actually do." },
     { step:"Move 2", est:"2 min", title:"Sort: cool vs yours", ask:null,
-      say:"Now the hard one. Sort them. Cool moonshots versus things that change my Monday. Look at the screen. Solara is amazing. MAI Image, gorgeous. Mayo Clinic tuning, science fiction. Cool? Yes. Changing my customer conversation next week? No. Move on. And then the other column. Copilot app, Agent 365, Foundry. Those three I can act on this quarter. Brutal honesty is the move." },
+      say:"Now the hard one. The agent has a long list. I want it sorted into two columns. Things that are cool but not for me. Things that change my Monday.\n\nRead it. Sort. Cool moonshots versus things I can act on this quarter. The verb is sort, not summarize. I want a decision, not a recap.\n\nLook at the screen. Solara is amazing. MAI Image, gorgeous. Mayo Clinic tuning, science fiction. Cool. Not changing my customer conversation next week. Other column. Copilot app. Agent 365. Foundry. Those three I can act on. Brutal honesty is the move." },
     { step:"Move 3", est:"1.5 min", title:"Customer conversation", ask:null,
-      say:"Now I translate. I pick three of the four and turn each into a conversation. Not a feature pitch. An opening line, the objection it kills, the next step. Look at Agent 365. Every customer I've talked to in the last six months has asked who owns these things once they're live. There is now an actual answer. That's a Friday meeting." },
+      say:"Now I translate. The features mean nothing on a customer call. What matters is the opening line, the objection it kills, and the next step.\n\nRead it. Pick three of the four and turn each into a conversation. Not a feature pitch. The shape of an actual call.\n\nLook at Agent 365. Every customer I've talked to in the last six months has asked who owns these things once they're live. There is now an actual answer. That's a Friday meeting. Not a discovery call." },
     { step:"Move 4", est:"1.5 min", title:"Build me an offer", ask:null,
-      say:"Now we go from conversation to commerce. Take the biggest one, Agent 365, and package it as a three-week fixed-price sprint. With real deliverables. A governance playbook. An inventory tool. One live governed agent. That's something my team can sell on Monday. Not a discovery call. An actual offer." },
+      say:"Now we go from conversation to commerce. Take the biggest one and package it. Not a slide. A sellable offer.\n\nRead it. Agent 365 as a three-week fixed-price sprint. Real deliverables. A fixed price. Something my team can put on a quote next week.\n\nAnd look. Governance playbook. Inventory tool. One live governed agent. That is something my team can sell on Monday. Not a discovery call. An actual offer." },
     { step:"Move 5", est:"1.5 min", title:"Make me the source", ask:null,
-      say:"And the last one is the move that actually compounds. Stop forwarding Microsoft links to your network. Be the source. A LinkedIn post in my voice. A short email to one customer who asked the right question last call. The agents are not the differentiator. Being the one teaching this on your patch is." },
+      say:"And the last one is the move that actually compounds. Stop forwarding Microsoft links to your network. Be the source.\n\nRead it. A LinkedIn post in my voice. A short email to one customer who asked the right question on the last call. Same Build news, coming from you.\n\nThe agents are not the differentiator. Being the one teaching this on your patch is. That's where it goes from cool tool to actual pipeline." },
     { step:"Next slide", est:"", title:"Now you're the operator", ask:null,
       say:"Nine minutes. One terminal. Five prompts. From 400+ Build sessions to three customer conversations, one new partner offer, and a LinkedIn post in my voice. And the prompts are right there. Scan the code or grab the link. Five prompts. They work in any AI chat. ChatGPT, Claude, Copilot, Gemini, or the CLI if you want the whole thing as one command. Run it on your own pipeline this week." },
     { step:"The ping", est:"", title:"It pays off", ask:null,
@@ -560,12 +566,17 @@ window.DEMO_SPEC = {
   const PING = SPEC.closingPing || null;
 
   /* ----- position model -----
-     Each move costs TWO positions: ARM (presenter sees upcoming script,
-     terminal stays as it was, audience sees nothing change) then FIRE
-     (terminal types the prompt and streams the agent lines).
-     This gives the presenter time to frame what's about to happen. */
-  const FIRST_MOVE_POS = 3;
-  const POS_PER_MOVE   = 2;
+     Each move costs THREE positions: ARM (presenter sees the upcoming
+     script, terminal stays as it was), TYPED (the prompt is typed into
+     the input bar but Enter hasn't been pressed yet · agent silent),
+     then FIRE (Enter pressed, terminal streams the agent lines).
+     Boot uses the same three-click rhythm: ARM, TYPED (copilot --yolo
+     sitting at the prompt), FIRE (banner streams in). */
+  const FIRST_BOOT_POS = 2;
+  const POS_PER_BOOT   = 3;            // arm / typed / fire
+  const LAST_BOOT_POS  = FIRST_BOOT_POS + POS_PER_BOOT - 1;  // 4
+  const FIRST_MOVE_POS = LAST_BOOT_POS + 1;                  // 5
+  const POS_PER_MOVE   = 3;            // arm / typed / fire
   const LAST_MOVE_POS  = FIRST_MOVE_POS + MOVES.length * POS_PER_MOVE - 1;
   const EXIT_POS       = LAST_MOVE_POS + 1;
   const PING_POS       = EXIT_POS + 1;
@@ -574,31 +585,42 @@ window.DEMO_SPEC = {
     if(pos < FIRST_MOVE_POS || pos > LAST_MOVE_POS) return -1;
     return Math.floor((pos - FIRST_MOVE_POS) / POS_PER_MOVE);
   }
-  function isArmPos(pos){
-    if(pos < FIRST_MOVE_POS || pos > LAST_MOVE_POS) return false;
-    return ((pos - FIRST_MOVE_POS) % POS_PER_MOVE) === 0;
+  function moveOffset(pos){
+    if(pos < FIRST_MOVE_POS || pos > LAST_MOVE_POS) return -1;
+    return (pos - FIRST_MOVE_POS) % POS_PER_MOVE;
   }
-  function isFirePos(pos){
-    if(pos < FIRST_MOVE_POS || pos > LAST_MOVE_POS) return false;
-    return ((pos - FIRST_MOVE_POS) % POS_PER_MOVE) === 1;
-  }
-  // How many moves are fully fired by the time we reach this position.
+  function isArmPos(pos){   return moveOffset(pos) === 0; }
+  function isTypedPos(pos){ return moveOffset(pos) === 1; }
+  function isFirePos(pos){  return moveOffset(pos) === 2; }
+  function isBootArm(pos){   return pos === FIRST_BOOT_POS; }      // 2
+  function isBootTyped(pos){ return pos === FIRST_BOOT_POS + 1; }  // 3
+  function isBootFire(pos){  return pos === FIRST_BOOT_POS + 2; }  // 4
+  // How many moves have been FIRED by the time we reach this position.
+  // ARM/TYPED don't add anything to the terminal; only FIRE does.
   function firedMoveCount(pos){
     if(pos < FIRST_MOVE_POS) return 0;
     if(pos > LAST_MOVE_POS) return MOVES.length;
-    const offset = pos - FIRST_MOVE_POS;
-    const idx = Math.floor(offset / POS_PER_MOVE);
-    const arm = (offset % POS_PER_MOVE) === 0;
-    return arm ? idx : idx + 1;  // arm: prior moves only; fire: this one is in/just played
+    const off = moveOffset(pos);
+    const idx = moveIndexFor(pos);
+    return off === 2 ? idx + 1 : idx;
   }
-  // Map a position to the notes[] index (one note per move; arm and fire share it).
+  // Map a position to the notes[] index. One note per logical step;
+  // the three phases of boot and of each move share a single note (with
+  // up to three paragraphs in `say`, one per phase).
   function presIndex(pos){
-    if(pos < FIRST_MOVE_POS) return pos;                // 0,1,2 = setup/terminal/boot
-    if(pos > LAST_MOVE_POS){
-      const baseExit = 3 + MOVES.length;                // notes index for exit slide
-      return baseExit + (pos - EXIT_POS);
-    }
-    return 3 + moveIndexFor(pos);
+    if(pos <= 1) return pos;                            // 0=setup, 1=terminal
+    if(pos >= FIRST_BOOT_POS && pos <= LAST_BOOT_POS) return 2;  // boot
+    if(pos >= FIRST_MOVE_POS && pos <= LAST_MOVE_POS) return 3 + moveIndexFor(pos);
+    if(pos === EXIT_POS) return 3 + MOVES.length;
+    if(pos === PING_POS) return 4 + MOVES.length;
+    return PRES.length - 1;
+  }
+  // Phase tag for the presenter pill. Returns 'arm' | 'typed' | 'fire' | ''.
+  function phaseFor(pos){
+    if(isBootArm(pos)   || isArmPos(pos))   return 'arm';
+    if(isBootTyped(pos) || isTypedPos(pos)) return 'typed';
+    if(isBootFire(pos)  || isFirePos(pos))  return 'fire';
+    return '';
   }
 
   /* ----- presenter sync (namespaced per demo) ----- */
@@ -759,15 +781,19 @@ window.DEMO_SPEC = {
   }
   function termHTML(pos, includeCurrent){
     if(pos<1) return '';
-    let h = bootPromptHTML(pos>=2?CONFIG.bootCmd:'', pos<2);
-    if(pos>=2) h += bannerHTML(true);
+    // Boot prompt: bootCmd typed from pos 3 (boot TYPED) onward.
+    // Caret blinks at pos 1,2,3 (before the banner streams), then is removed at pos 4+.
+    const showBootCmd = pos >= FIRST_BOOT_POS + 1;   // 3+
+    const showCaret   = pos <= FIRST_BOOT_POS + 1;   // 1, 2, 3
+    let h = bootPromptHTML(showBootCmd ? CONFIG.bootCmd : '', showCaret);
+    if(pos >= FIRST_BOOT_POS + 2) h += bannerHTML(true);   // 4+ shows banner
     let count;
     if(pos > LAST_MOVE_POS) count = MOVES.length;
     else if(pos < FIRST_MOVE_POS) count = 0;
     else {
       const fired = firedMoveCount(pos);
       // includeCurrent only matters during a live fire animation (we want the
-      // moveblock injected by animateMove, not pre-rendered).
+      // moveblock injected by animateMoveFire, not pre-rendered).
       count = (isFirePos(pos) && includeCurrent===false) ? fired - 1 : fired;
     }
     for(let i=0;i<count;i++){ h += moveHTML(MOVES[i],i,true); }
@@ -794,8 +820,8 @@ window.DEMO_SPEC = {
     }
     exitSlide.classList.toggle('show', pos>=EXIT_POS);
     if(PING){ waPing.classList.toggle('in', pos>=PING_POS); }
-    // input bar is visible from boot onward (pos>=2) while terminal is on screen
-    inputShow(pos>=2 && pos<=LAST_MOVE_POS);
+    // Input bar only during move positions (boot uses the inline PS prompt).
+    inputShow(pos>=FIRST_MOVE_POS && pos<=LAST_MOVE_POS);
     if(pos<FIRST_MOVE_POS) inputClear();
   }
 
@@ -806,72 +832,103 @@ window.DEMO_SPEC = {
     curPos=pos;
     updateScreens(pos);
     if(pos===0){ syncCardStage(pos); broadcast(); return; }
-    // No animation needed: setup/terminal idle, all post-move positions, OR ARM positions
-    // (arm is intentionally silent for the audience · presenter view updates via broadcast).
-    if(!animate || pos===1 || pos>LAST_MOVE_POS || isArmPos(pos)){
+    // Pure-static positions: setup (1), boot ARM (2), all move ARMs (silent
+    // for audience), all move TYPEDs when back-stepping (input bar pre-filled),
+    // and post-move positions (exit, ping).
+    const needsAnim = animate && (
+      isBootTyped(pos) || isBootFire(pos) ||
+      isTypedPos(pos)  || isFirePos(pos)
+    );
+    if(!needsAnim){
       term.innerHTML = termHTML(pos, true);
-      inputClear();
+      // For TYPED move positions, the input bar must show the prompt sitting there.
+      if(isTypedPos(pos)){
+        const m = MOVES[moveIndexFor(pos)];
+        inputSet(m.ask);
+      } else if(pos<FIRST_MOVE_POS || pos>LAST_MOVE_POS){
+        inputClear();
+      } else if(isArmPos(pos) || isFirePos(pos)){
+        // ARM: input empty (move not started). FIRE static: also empty (post-fire).
+        inputClear();
+      }
       scroll(); syncCardStage(pos); broadcast(); return;
     }
-    // Animating: boot or a fire-of-move position.
-    if(pos===2){
-      term.innerHTML = termHTML(1, true);   // pre-boot · empty bootTyped + caret
+    // Animation paths.
+    if(isBootTyped(pos)){
+      term.innerHTML = termHTML(FIRST_BOOT_POS, true);  // boot ARM state: empty bootTyped + caret
       scroll();
-      animateBoot(tok);
-    } else {
-      term.innerHTML = termHTML(pos, false);  // through previous fired move only
-      syncCardStage(pos - 1);   // keep prior card on stage briefly · animateMove will dismiss
+      animateBootTyped(tok);
+    } else if(isBootFire(pos)){
+      term.innerHTML = termHTML(FIRST_BOOT_POS + 1, true);  // boot TYPED state: cmd typed + caret, no banner
       scroll();
-      animateMove(moveIndexFor(pos),tok);
+      animateBootBanner(tok);
+    } else if(isTypedPos(pos)){
+      // Terminal content unchanged from previous move's end (or from boot fire).
+      // Render the static term for this pos · only the input bar will animate.
+      term.innerHTML = termHTML(pos, true);
+      syncCardStage(pos);   // keeps prior card visible (firedMoveCount unchanged from ARM)
+      inputClear();
+      scroll();
+      animateMoveTyped(moveIndexFor(pos), tok);
+    } else if(isFirePos(pos)){
+      term.innerHTML = termHTML(pos, false);  // through previously-fired moves only
+      syncCardStage(pos - 1);                  // keep prior card briefly · animateMoveFire dismisses
+      scroll();
+      animateMoveFire(moveIndexFor(pos), tok);
     }
     broadcast();
   }
 
-  function animateBoot(tok){
+  function animateBootTyped(tok){
     animating=true;
-    const banner=document.createElement('div'); banner.innerHTML=bannerHTML(false);
-    while(banner.firstChild) term.appendChild(banner.firstChild);
     const typed=document.getElementById('bootTyped');
     typewrite(typed, CONFIG.bootCmd, CONFIG.typeBoot, tok, function(){
       if(tok!==animToken) return;
-      const caret=term.querySelector('.boot-cmd .caret'); if(caret) caret.remove();
-      const items=term.querySelectorAll('.cp-banner,.cp-status,.cp-meta');
-      let d=0;
-      items.forEach(function(n){ d+=CONFIG.bootGap; T(function(){ if(tok!==animToken) return; n.classList.add('in'); scroll(); }, d); });
-      T(function(){ if(tok!==animToken) return; animating=false; broadcast(); }, d+60);
+      // Leave the caret blinking after the command · we haven't hit Enter yet.
+      animating=false; broadcast();
     });
   }
-  function animateMove(i,tok){
+  function animateBootBanner(tok){
     animating=true;
-    clearCardStage();
-    inputClear();
-    // type the prompt into the BOTTOM INPUT BAR (real CLI position)
+    const caret=term.querySelector('.boot-cmd .caret'); if(caret) caret.remove();
+    const banner=document.createElement('div'); banner.innerHTML=bannerHTML(false);
+    while(banner.firstChild) term.appendChild(banner.firstChild);
+    const items=term.querySelectorAll('.cp-banner,.cp-status,.cp-meta');
+    let d=0;
+    items.forEach(function(n){ d+=CONFIG.bootGap; T(function(){ if(tok!==animToken) return; n.classList.add('in'); scroll(); }, d); });
+    T(function(){ if(tok!==animToken) return; animating=false; broadcast(); }, d+60);
+  }
+  function animateMoveTyped(i,tok){
+    animating=true;
+    // Type the prompt into the BOTTOM INPUT BAR and leave it sitting there.
     const typedEl=document.getElementById('cliTyped');
     typewrite(typedEl, MOVES[i].ask, CONFIG.typeAsk, tok, function(){
       if(tok!==animToken) return;
-      // brief beat after "enter" · clear the input, append the moveblock with ask filled, then stream agent lines
+      // Prompt now visible in the input bar. Agent silent. Wait for fire.
+      animating=false; broadcast();
+    });
+  }
+  function animateMoveFire(i,tok){
+    animating=true;
+    clearCardStage();
+    inputClear();
+    // The submitted ❯ line lands together with the input clearing · this is "Enter pressed".
+    const wrap=document.createElement('div'); wrap.innerHTML=moveHTML(MOVES[i],i,true);
+    const node=wrap.firstChild; term.appendChild(node);
+    const reveals=node.querySelectorAll('.line, .card');
+    reveals.forEach(function(n){ n.classList.remove('in'); });
+    scroll();
+    let d=0;
+    reveals.forEach(function(n){
+      d+=CONFIG.lineGap;
       T(function(){
         if(tok!==animToken) return;
-        inputClear();
-        const wrap=document.createElement('div'); wrap.innerHTML=moveHTML(MOVES[i],i,true);
-        const node=wrap.firstChild; term.appendChild(node);
-        // hide agent lines/card initially so they fade in in sequence
-        const reveals=node.querySelectorAll('.line, .card');
-        reveals.forEach(function(n){ n.classList.remove('in'); });
+        n.classList.add('in');
+        if(n.classList.contains('card')){ showCardStage(n.outerHTML); }
         scroll();
-        let d=0;
-        reveals.forEach(function(n){
-          d+=CONFIG.lineGap;
-          T(function(){
-            if(tok!==animToken) return;
-            n.classList.add('in');
-            if(n.classList.contains('card')){ showCardStage(n.outerHTML); }
-            scroll();
-          }, d);
-        });
-        T(function(){ if(tok!==animToken) return; animating=false; broadcast(); }, d+60);
-      }, 220);
+      }, d);
     });
+    T(function(){ if(tok!==animToken) return; animating=false; broadcast(); }, d+60);
   }
 
   /* ----- drive ----- */
@@ -886,8 +943,8 @@ window.DEMO_SPEC = {
   function railData(idx){
     const fired = firedMoveCount(idx);
     const active = moveIndexFor(idx);
-    // During FIRE the move is still "now" (animation in progress) · only count as
-    // done once we've advanced PAST the fire (i.e. to arm of the next move).
+    // During FIRE the move is still "now" (animation in progress or just landed) ·
+    // only count as done once we've advanced PAST the fire (to next move's ARM).
     const done   = (idx>LAST_MOVE_POS) ? MOVES.length : (isFirePos(idx) ? fired-1 : fired);
     return MOVES.map(function(m,i){
       let state = 'todo';
@@ -898,8 +955,7 @@ window.DEMO_SPEC = {
   }
   function pvPayload(idx){
     const s=PRES[presIndex(idx)]||PRES[PRES.length-1];
-    const phase = isArmPos(idx) ? 'arm' : (isFirePos(idx) ? 'fire' : '');
-    return { demoId:CONFIG.demoId, idx:idx, total:LAST_POS, phase:phase,
+    return { demoId:CONFIG.demoId, idx:idx, total:LAST_POS, phase:phaseFor(idx),
       step:s.step, est:s.est||'', title:s.title, ask:s.ask||null, say:s.say,
       rail:railData(idx), atStart:(idx===0), atEnd:(idx>=LAST_POS) };
   }
@@ -907,36 +963,46 @@ window.DEMO_SPEC = {
     channel.postMessage({type:'state', idx:curPos});
     channel.postMessage({type:'pv', pv:pvPayload(curPos)});
   }catch(e){} }
+  function escapeHTML(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function renderPV(idx){
     const s=PRES[presIndex(idx)]||PRES[PRES.length-1];
-    const arm  = isArmPos(idx);
-    const fire = isFirePos(idx);
+    const phase = phaseFor(idx);
+    const arm   = phase==='arm';
+    const typed = phase==='typed';
+    const fire  = phase==='fire';
     const moveIdx = moveIndexFor(idx);
     const m = (moveIdx>=0) ? MOVES[moveIdx] : null;
 
-    // Step label · keep clean (no suffix) · the big pill at top-right says the phase.
+    // Step label · clean. The big pill at top-right carries the phase.
     document.getElementById('pvStep').textContent = s.step;
     document.getElementById('pvEst').textContent  = s.est?('\u00b7 '+s.est):'';
     document.getElementById('pvTitle').textContent= s.title;
 
-    // Big phase pill: ARMED (blue) at arm, LIVE (green) at fire, hidden otherwise.
+    // Big phase pill, 3 states · impossible to miss.
     const phaseEl = document.getElementById('pvPhase');
     phaseEl.className = 'pv-phase';
-    if(arm){  phaseEl.classList.add('arm');  phaseEl.textContent = 'Armed · next click fires'; }
-    if(fire){ phaseEl.classList.add('fire'); phaseEl.textContent = 'Live · animation playing'; }
+    if(arm){   phaseEl.classList.add('arm');   phaseEl.textContent = 'Armed \u00b7 next click types'; }
+    if(typed){ phaseEl.classList.add('typed'); phaseEl.textContent = 'Typed \u00b7 next click fires'; }
+    if(fire){  phaseEl.classList.add('fire');  phaseEl.textContent = 'Live \u00b7 animation playing'; }
 
     const askWrap=document.getElementById('pvAskWrap');
-    // Show the upcoming prompt at arm/fire (from the move's ask), or the boot cmd at pos 2.
+    // Show the upcoming prompt at any phase of a move (or boot).
     let askToShow = s.ask || null;
-    if(m && (arm || fire)) askToShow = m.ask;
+    if(m && (arm || typed || fire)) askToShow = m.ask;
     if(askToShow){ askWrap.style.display=''; document.getElementById('pvAsk').textContent=askToShow; }
     else { askWrap.style.display='none'; }
 
-    // The spoken note is ALWAYS visible. The presenter needs it both before firing
-    // (to frame the move) and during/after firing (to talk over what lands on screen).
+    // The spoken note is ALWAYS visible. Split on blank lines into paragraphs ·
+    // one per phase (ARM / TYPED / LIVE). The paragraph matching the current
+    // phase gets a left-border accent in the phase color so the presenter knows
+    // which paragraph to read. Non-phase positions render as a single paragraph.
     const sayEl = document.getElementById('pvSay');
-    sayEl.textContent = s.say;
-    sayEl.style.opacity = '1';
+    const paras = (s.say||'').split(/\n\n+/);
+    const activeIdx = arm ? 0 : (typed ? 1 : (fire ? 2 : -1));
+    sayEl.innerHTML = paras.map(function(p, i){
+      const cls = 'pv-say-p' + (i===activeIdx && phase ? ' active '+phase : '');
+      return '<p class="'+cls+'">'+escapeHTML(p)+'</p>';
+    }).join('');
 
     const r=document.getElementById('pvRail'); r.innerHTML='';
     const fired = firedMoveCount(idx);
