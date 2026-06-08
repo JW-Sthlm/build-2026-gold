@@ -197,6 +197,11 @@
   .pv-step{font-family:var(--mono);font-size:13px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase}
   .pv-est{font-family:var(--mono);font-size:13px;color:var(--fg-muted)}
   .pv-title{font-family:var(--jak);font-size:30px;font-weight:800;letter-spacing:-.01em}
+  /* Phase pill: huge, top-right of presenter top bar, color-coded so it's impossible to miss */
+  .pv-phase{margin-left:auto;font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.14em;
+    padding:8px 16px;border-radius:999px;text-transform:uppercase;display:none}
+  .pv-phase.arm{display:inline-block;background:rgba(74,158,255,.18);color:#7fb8ff;border:1px solid rgba(74,158,255,.5)}
+  .pv-phase.fire{display:inline-block;background:rgba(57,211,83,.18);color:#5ad17e;border:1px solid rgba(57,211,83,.5)}
   .pv-ask{font-family:var(--mono);font-size:16px;color:#E6E8EA;background:var(--bg-card);border:1px solid var(--border);
     border-left:3px solid var(--t-pink);border-radius:8px;padding:14px 18px;line-height:1.5}
   .pv-ask .lbl{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-muted);margin-bottom:7px}
@@ -356,7 +361,7 @@
 
   <!-- PRESENTER VIEW -->
   <div class="pv" id="pv">
-    <div class="pv-top"><span class="pv-step" id="pvStep"></span><span class="pv-est" id="pvEst"></span><span class="pv-title" id="pvTitle"></span></div>
+    <div class="pv-top"><span class="pv-step" id="pvStep"></span><span class="pv-est" id="pvEst"></span><span class="pv-title" id="pvTitle"></span><span class="pv-phase" id="pvPhase"></span></div>
     <div class="pv-ask" id="pvAskWrap"><span class="lbl">Prompt to send</span><span id="pvAsk"></span></div>
     <div class="pv-say"><span class="lbl">Say</span><span id="pvSay"></span></div>
     <div class="pv-rail" id="pvRail"></div>
@@ -879,13 +884,15 @@ window.DEMO_SPEC = {
      demo's rail and note without owning the SPEC. The rail is gated by the
      host to the active slide, so several demos never pile up in one deck. */
   function railData(idx){
+    const fired = firedMoveCount(idx);
     const active = moveIndexFor(idx);
-    const done   = (idx>LAST_MOVE_POS) ? MOVES.length : firedMoveCount(idx);
+    // During FIRE the move is still "now" (animation in progress) · only count as
+    // done once we've advanced PAST the fire (i.e. to arm of the next move).
+    const done   = (idx>LAST_MOVE_POS) ? MOVES.length : (isFirePos(idx) ? fired-1 : fired);
     return MOVES.map(function(m,i){
       let state = 'todo';
       if(i < done) state = 'done';
-      // The currently-armed or currently-firing move is "now".
-      if(i === active && i >= done) state = 'now';
+      if(i === active) state = 'now';
       return { label:(i+1)+' \u00b7 '+m.title, state:state };
     });
   }
@@ -907,13 +914,16 @@ window.DEMO_SPEC = {
     const moveIdx = moveIndexFor(idx);
     const m = (moveIdx>=0) ? MOVES[moveIdx] : null;
 
-    // Step label gets a phase suffix so the presenter knows which click they're on.
-    let stepLabel = s.step;
-    if(arm)  stepLabel = s.step + '  ·  ARM (next click fires)';
-    if(fire) stepLabel = s.step + '  ·  FIRING';
-    document.getElementById('pvStep').textContent = stepLabel;
+    // Step label · keep clean (no suffix) · the big pill at top-right says the phase.
+    document.getElementById('pvStep').textContent = s.step;
     document.getElementById('pvEst').textContent  = s.est?('\u00b7 '+s.est):'';
     document.getElementById('pvTitle').textContent= s.title;
+
+    // Big phase pill: ARMED (blue) at arm, LIVE (green) at fire, hidden otherwise.
+    const phaseEl = document.getElementById('pvPhase');
+    phaseEl.className = 'pv-phase';
+    if(arm){  phaseEl.classList.add('arm');  phaseEl.textContent = 'Armed · next click fires'; }
+    if(fire){ phaseEl.classList.add('fire'); phaseEl.textContent = 'Live · animation playing'; }
 
     const askWrap=document.getElementById('pvAskWrap');
     // Show the upcoming prompt at arm/fire (from the move's ask), or the boot cmd at pos 2.
@@ -922,23 +932,20 @@ window.DEMO_SPEC = {
     if(askToShow){ askWrap.style.display=''; document.getElementById('pvAsk').textContent=askToShow; }
     else { askWrap.style.display='none'; }
 
-    // At fire, dim the spoken note · the talking should already be done.
+    // The spoken note is ALWAYS visible. The presenter needs it both before firing
+    // (to frame the move) and during/after firing (to talk over what lands on screen).
     const sayEl = document.getElementById('pvSay');
-    if(fire){
-      sayEl.textContent = '\u25B6  Click sent. Terminal is animating. Let it land.';
-      sayEl.style.opacity = '0.55';
-    } else {
-      sayEl.textContent = s.say;
-      sayEl.style.opacity = '1';
-    }
+    sayEl.textContent = s.say;
+    sayEl.style.opacity = '1';
 
     const r=document.getElementById('pvRail'); r.innerHTML='';
+    const fired = firedMoveCount(idx);
     const active = moveIndexFor(idx);
-    const done   = (idx>LAST_MOVE_POS) ? MOVES.length : firedMoveCount(idx);
+    const done   = (idx>LAST_MOVE_POS) ? MOVES.length : (isFirePos(idx) ? fired-1 : fired);
     MOVES.forEach(function(m,i){
       const el=document.createElement('span'); el.className='pvr';
       if(i<done) el.classList.add('done');
-      if(i===active && i>=done) el.classList.add('now');
+      if(i===active) el.classList.add('now');
       el.textContent=(i+1)+' \u00b7 '+m.title;
       r.appendChild(el);
     });
