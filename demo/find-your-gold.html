@@ -375,7 +375,7 @@
       <button id="pvBack" type="button">&#9664; Back</button>
       <button id="pvNext" class="primary" type="button">Advance &#9654;</button>
       <button id="pvReset" type="button">Replay</button>
-      <span class="hint"><kbd>space</kbd> advance <kbd>&larr;</kbd> back <kbd>R</kbd> replay <kbd>Esc</kbd> close</span>
+      <span class="hint"><kbd>space</kbd> advance <kbd>&larr;</kbd> back <kbd>PgUp</kbd>/<kbd>PgDn</kbd> scene <kbd>Home</kbd>/<kbd>End</kbd> jump <kbd>R</kbd> replay</span>
     </div>
   </div>
 
@@ -935,6 +935,30 @@ window.DEMO_SPEC = {
   function advance(){ if(isPresenter) return; if(animating){ renderTo(curPos,false); return; } renderTo(curPos+1,true); }
   function back(){ if(isPresenter) return; if(animating){ renderTo(curPos,false); return; } renderTo(curPos-1,false); }
   function resetDemo(){ renderTo(0,false); }
+  // Scene boundaries: positions where the audience-visible state changes
+  // meaningfully. PageDown/PageUp jump between these (skip the arm/typed
+  // intermediates); Home/End jump to the very start or end.
+  function scenePositions(){
+    const arr = [0, 1, LAST_BOOT_POS];
+    for(let i=0;i<MOVES.length;i++){ arr.push(FIRST_MOVE_POS + i*POS_PER_MOVE + 2); }  // each move's FIRE
+    arr.push(EXIT_POS);
+    if(PING) arr.push(PING_POS);
+    return arr;
+  }
+  function nextScene(pos){
+    const sc = scenePositions();
+    for(let i=0;i<sc.length;i++) if(sc[i] > pos) return sc[i];
+    return sc[sc.length-1];
+  }
+  function prevScene(pos){
+    const sc = scenePositions();
+    for(let i=sc.length-1;i>=0;i--) if(sc[i] < pos) return sc[i];
+    return sc[0];
+  }
+  function jumpToNextScene(){ if(isPresenter) return; renderTo(nextScene(curPos), false); }
+  function jumpToPrevScene(){ if(isPresenter) return; renderTo(prevScene(curPos), false); }
+  function jumpHome(){ if(isPresenter) return; renderTo(0, false); }
+  function jumpEnd(){  if(isPresenter) return; renderTo(LAST_POS, false); }
 
   /* ----- presenter broadcast / view ----- */
   /* railData + pvPayload let an EXTERNAL deck-wide presenter render this
@@ -1038,9 +1062,18 @@ window.DEMO_SPEC = {
         if(e.data.action==='advance') advance();
         else if(e.data.action==='back') back();
         else if(e.data.action==='reset') resetDemo();
+        else if(e.data.action==='next-scene') jumpToNextScene();
+        else if(e.data.action==='prev-scene') jumpToPrevScene();
+        else if(e.data.action==='home') jumpHome();
+        else if(e.data.action==='end')  jumpEnd();
       }
     }; }
     updateScreens(0); broadcast();
+    // Defensive resync: re-broadcast current state every 250ms so the presenter
+    // window always catches up within a quarter second, even if a BroadcastChannel
+    // event was dropped (Chrome can throttle background windows). renderPV is
+    // idempotent so this is safe; the cost is one tiny postMessage per tick.
+    setInterval(broadcast, 250);
   }
 
   function openPresenter(){ const w=window.open(location.pathname+'?presenter=1&demo='+encodeURIComponent(CONFIG.demoId),'pres-'+CONFIG.demoId,'width=1180,height=720'); if(w){ T(broadcast,500); T(broadcast,1200); } }
@@ -1048,15 +1081,23 @@ window.DEMO_SPEC = {
   document.addEventListener('keydown', function(e){
     if(e.key==='p'||e.key==='P'){ if(!isPresenter){ e.preventDefault(); openPresenter(); } return; }
     if(isPresenter){
-      if(e.key===' '||e.key==='Enter'||e.key==='ArrowRight'||e.key==='ArrowDown'||e.key==='PageDown'){ e.preventDefault(); sendCmd('advance'); }
-      else if(e.key==='ArrowLeft'||e.key==='ArrowUp'||e.key==='PageUp'){ e.preventDefault(); sendCmd('back'); }
+      if(e.key===' '||e.key==='Enter'||e.key==='ArrowRight'||e.key==='ArrowDown'){ e.preventDefault(); sendCmd('advance'); }
+      else if(e.key==='ArrowLeft'||e.key==='ArrowUp'){ e.preventDefault(); sendCmd('back'); }
+      else if(e.key==='PageDown'){ e.preventDefault(); sendCmd('next-scene'); }
+      else if(e.key==='PageUp'){ e.preventDefault(); sendCmd('prev-scene'); }
+      else if(e.key==='Home'){ e.preventDefault(); sendCmd('home'); }
+      else if(e.key==='End'){  e.preventDefault(); sendCmd('end'); }
       else if(e.key==='r'||e.key==='R'){ e.preventDefault(); sendCmd('reset'); }
       return;
     }
     if(e.key==='r'||e.key==='R'){ e.preventDefault(); resetDemo(); return; }
     if(e.key==='Escape'){ e.preventDefault(); resetDemo(); return; }
-    if(e.key===' '||e.key==='Enter'||e.key==='ArrowRight'||e.key==='ArrowDown'||e.key==='PageDown'){ e.preventDefault(); advance(); }
-    else if(e.key==='ArrowLeft'||e.key==='ArrowUp'||e.key==='PageUp'){ e.preventDefault(); back(); }
+    if(e.key==='Home'){ e.preventDefault(); jumpHome(); return; }
+    if(e.key==='End'){  e.preventDefault(); jumpEnd();  return; }
+    if(e.key==='PageDown'){ e.preventDefault(); jumpToNextScene(); return; }
+    if(e.key==='PageUp'){   e.preventDefault(); jumpToPrevScene(); return; }
+    if(e.key===' '||e.key==='Enter'||e.key==='ArrowRight'||e.key==='ArrowDown'){ e.preventDefault(); advance(); }
+    else if(e.key==='ArrowLeft'||e.key==='ArrowUp'){ e.preventDefault(); back(); }
   });
 })();
 </script>
