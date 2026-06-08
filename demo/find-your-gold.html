@@ -394,7 +394,7 @@ window.DEMO_SPEC = {
   launchSlide: {
     kick: "Build 2026 <b>&middot;</b> partner reality check",
     h1: "From the buzz <span class=\"amber\">to your gold.</span>",
-    sub: "LinkedIn is on fire. 600 sessions on the catalogue. Half of it is brilliant. A small slice is actually yours. Let me show you how I find it on a Monday morning."
+    sub: "Thanks Lorette. You just heard the headline list. 400+ sessions on the catalogue. LinkedIn on fire. Same question every Monday: what do I actually DO with it?"
   },
   exitSlide: {
     kick: "From the noise <b>&middot;</b> to your gold",
@@ -516,7 +516,7 @@ window.DEMO_SPEC = {
   ],
   notes: [
     { step:"Setup", est:"~9 min", title:"Find your gold", ask:null,
-      say:"Quick scene. It's Monday morning after Build. My LinkedIn is on fire. Twelve emails. Six webinar invites. Six hundred sessions in the catalogue. Half of it is brilliant. And honestly, most of it is not for me this quarter. So this is what I actually do. One terminal. Five prompts. About nine minutes. Watch what comes out the other end." },
+      say:"Thanks Lorette. You just heard the headline list. Foundry. Agent 365. Copilot app. Discovery. Scout. The catalogue this year is 400+ sessions plus everything that hit the LinkedIn feed in the last 48 hours. And I get the same question from partners every Monday after Build. Cool. But what do I actually DO with it on a customer call this week? So here's the meta move. Same Copilot CLI I use every day. I'll send an agent at the news. Tell it what my partners and customers care about. Let it sort. Nine minutes. One terminal. Five prompts. Watch what comes out the other end." },
     { step:"Terminal", est:"", title:"copilot CLI", ask:null,
       say:"There it is. Same Copilot CLI I run every day. Just the prompt blinking. No prepared file. No safety net. Same tool any of you can pick up after this call." },
     { step:"Boot", est:"", title:"copilot --yolo", ask:"copilot --yolo",
@@ -532,9 +532,9 @@ window.DEMO_SPEC = {
     { step:"Move 5", est:"1.5 min", title:"Make me the source", ask:null,
       say:"And the last one is the move that actually compounds. Stop forwarding Microsoft links to your network. Be the source. A LinkedIn post in my voice. A short email to one customer who asked the right question last call. The agents are not the differentiator. Being the one teaching this on your patch is." },
     { step:"Next slide", est:"", title:"Now you're the operator", ask:null,
-      say:"Nine minutes. One terminal. Five prompts. From six hundred Build sessions to three customer conversations, one new partner offer, and a LinkedIn post in my voice. And the prompts are right there. Scan the code or grab the link. Five prompts. They work in any AI chat. ChatGPT, Claude, Copilot, Gemini, or the CLI if you want the whole thing as one command. Run it on your own pipeline this week." },
+      say:"Nine minutes. One terminal. Five prompts. From 400+ Build sessions to three customer conversations, one new partner offer, and a LinkedIn post in my voice. And the prompts are right there. Scan the code or grab the link. Five prompts. They work in any AI chat. ChatGPT, Claude, Copilot, Gemini, or the CLI if you want the whole thing as one command. Run it on your own pipeline this week." },
     { step:"The ping", est:"", title:"It pays off", ask:null,
-      say:"And here's the kicker. One more click. That's a real partner answer to the kind of LinkedIn post we just drafted. From six hundred sessions to a Friday meeting with the Head of AI at a Nordic bank. That is what becoming the source looks like." }
+      say:"And here's the kicker. One more click. That's a real partner answer to the kind of LinkedIn post we just drafted. From 400+ sessions to a Friday meeting with the Head of AI at a Nordic bank. That is what becoming the source looks like." }
   ],
   closingPing: {
     app: "Teams",
@@ -554,13 +554,47 @@ window.DEMO_SPEC = {
   const PRES = SPEC.notes;
   const PING = SPEC.closingPing || null;
 
-  /* ----- position model ----- */
+  /* ----- position model -----
+     Each move costs TWO positions: ARM (presenter sees upcoming script,
+     terminal stays as it was, audience sees nothing change) then FIRE
+     (terminal types the prompt and streams the agent lines).
+     This gives the presenter time to frame what's about to happen. */
   const FIRST_MOVE_POS = 3;
-  const LAST_MOVE_POS  = FIRST_MOVE_POS + MOVES.length - 1;
+  const POS_PER_MOVE   = 2;
+  const LAST_MOVE_POS  = FIRST_MOVE_POS + MOVES.length * POS_PER_MOVE - 1;
   const EXIT_POS       = LAST_MOVE_POS + 1;
   const PING_POS       = EXIT_POS + 1;
   const LAST_POS       = PING ? PING_POS : EXIT_POS;
-  function moveIndexFor(pos){ return pos - FIRST_MOVE_POS; }
+  function moveIndexFor(pos){
+    if(pos < FIRST_MOVE_POS || pos > LAST_MOVE_POS) return -1;
+    return Math.floor((pos - FIRST_MOVE_POS) / POS_PER_MOVE);
+  }
+  function isArmPos(pos){
+    if(pos < FIRST_MOVE_POS || pos > LAST_MOVE_POS) return false;
+    return ((pos - FIRST_MOVE_POS) % POS_PER_MOVE) === 0;
+  }
+  function isFirePos(pos){
+    if(pos < FIRST_MOVE_POS || pos > LAST_MOVE_POS) return false;
+    return ((pos - FIRST_MOVE_POS) % POS_PER_MOVE) === 1;
+  }
+  // How many moves are fully fired by the time we reach this position.
+  function firedMoveCount(pos){
+    if(pos < FIRST_MOVE_POS) return 0;
+    if(pos > LAST_MOVE_POS) return MOVES.length;
+    const offset = pos - FIRST_MOVE_POS;
+    const idx = Math.floor(offset / POS_PER_MOVE);
+    const arm = (offset % POS_PER_MOVE) === 0;
+    return arm ? idx : idx + 1;  // arm: prior moves only; fire: this one is in/just played
+  }
+  // Map a position to the notes[] index (one note per move; arm and fire share it).
+  function presIndex(pos){
+    if(pos < FIRST_MOVE_POS) return pos;                // 0,1,2 = setup/terminal/boot
+    if(pos > LAST_MOVE_POS){
+      const baseExit = 3 + MOVES.length;                // notes index for exit slide
+      return baseExit + (pos - EXIT_POS);
+    }
+    return 3 + moveIndexFor(pos);
+  }
 
   /* ----- presenter sync (namespaced per demo) ----- */
   const CHANNEL='terminal-demo-'+CONFIG.demoId;
@@ -625,8 +659,12 @@ window.DEMO_SPEC = {
     const stage=document.getElementById('cardStage');
     if(!stage) return;
     if(pos<FIRST_MOVE_POS || pos>LAST_MOVE_POS){ stage.classList.remove('in'); stage.innerHTML=''; return; }
-    const idx=moveIndexFor(pos);
-    if(idx<0){ stage.classList.remove('in'); stage.innerHTML=''; return; }
+    // Show the card belonging to the most-recently-fired move.
+    // ARM positions: show the previous move's card (audience sees no change).
+    // FIRE positions: show this move's card (used by back-step renders; live anim manages its own).
+    const fired = firedMoveCount(pos);
+    if(fired<=0){ stage.classList.remove('in'); stage.innerHTML=''; return; }
+    const idx = fired - 1;
     const m=MOVES[idx];
     const cardLine=(m.lines||[]).find(function(l){return l.k==='card';});
     if(!cardLine){ stage.classList.remove('in'); stage.innerHTML=''; return; }
@@ -714,12 +752,20 @@ window.DEMO_SPEC = {
     h+='</div>';
     return h;
   }
-  function termHTML(pos){
+  function termHTML(pos, includeCurrent){
     if(pos<1) return '';
     let h = bootPromptHTML(pos>=2?CONFIG.bootCmd:'', pos<2);
     if(pos>=2) h += bannerHTML(true);
-    const last=Math.min(moveIndexFor(pos), MOVES.length-1);
-    for(let i=0;i<=last;i++){ h += moveHTML(MOVES[i],i,true); }
+    let count;
+    if(pos > LAST_MOVE_POS) count = MOVES.length;
+    else if(pos < FIRST_MOVE_POS) count = 0;
+    else {
+      const fired = firedMoveCount(pos);
+      // includeCurrent only matters during a live fire animation (we want the
+      // moveblock injected by animateMove, not pre-rendered).
+      count = (isFirePos(pos) && includeCurrent===false) ? fired - 1 : fired;
+    }
+    for(let i=0;i<count;i++){ h += moveHTML(MOVES[i],i,true); }
     return h;
   }
 
@@ -755,16 +801,24 @@ window.DEMO_SPEC = {
     curPos=pos;
     updateScreens(pos);
     if(pos===0){ syncCardStage(pos); broadcast(); return; }
-    if(!animate || pos===1 || pos>LAST_MOVE_POS){
-      term.innerHTML = termHTML(pos);
+    // No animation needed: setup/terminal idle, all post-move positions, OR ARM positions
+    // (arm is intentionally silent for the audience · presenter view updates via broadcast).
+    if(!animate || pos===1 || pos>LAST_MOVE_POS || isArmPos(pos)){
+      term.innerHTML = termHTML(pos, true);
       inputClear();
       scroll(); syncCardStage(pos); broadcast(); return;
     }
-    term.innerHTML = termHTML(pos-1);
-    syncCardStage(pos-1);
-    scroll();
-    if(pos===2){ animateBoot(tok); }
-    else { animateMove(moveIndexFor(pos),tok); }
+    // Animating: boot or a fire-of-move position.
+    if(pos===2){
+      term.innerHTML = termHTML(1, true);   // pre-boot · empty bootTyped + caret
+      scroll();
+      animateBoot(tok);
+    } else {
+      term.innerHTML = termHTML(pos, false);  // through previous fired move only
+      syncCardStage(pos - 1);   // keep prior card on stage briefly · animateMove will dismiss
+      scroll();
+      animateMove(moveIndexFor(pos),tok);
+    }
     broadcast();
   }
 
@@ -825,15 +879,20 @@ window.DEMO_SPEC = {
      demo's rail and note without owning the SPEC. The rail is gated by the
      host to the active slide, so several demos never pile up in one deck. */
   function railData(idx){
-    const active = (idx>=FIRST_MOVE_POS && idx<=LAST_MOVE_POS) ? moveIndexFor(idx) : -1;
-    const done   = (idx>LAST_MOVE_POS) ? MOVES.length : Math.max(0, idx-FIRST_MOVE_POS);
+    const active = moveIndexFor(idx);
+    const done   = (idx>LAST_MOVE_POS) ? MOVES.length : firedMoveCount(idx);
     return MOVES.map(function(m,i){
-      return { label:(i+1)+' \u00b7 '+m.title, state:(i===active?'now':(i<done?'done':'todo')) };
+      let state = 'todo';
+      if(i < done) state = 'done';
+      // The currently-armed or currently-firing move is "now".
+      if(i === active && i >= done) state = 'now';
+      return { label:(i+1)+' \u00b7 '+m.title, state:state };
     });
   }
   function pvPayload(idx){
-    const s=PRES[idx]||PRES[PRES.length-1];
-    return { demoId:CONFIG.demoId, idx:idx, total:LAST_POS,
+    const s=PRES[presIndex(idx)]||PRES[PRES.length-1];
+    const phase = isArmPos(idx) ? 'arm' : (isFirePos(idx) ? 'fire' : '');
+    return { demoId:CONFIG.demoId, idx:idx, total:LAST_POS, phase:phase,
       step:s.step, est:s.est||'', title:s.title, ask:s.ask||null, say:s.say,
       rail:railData(idx), atStart:(idx===0), atEnd:(idx>=LAST_POS) };
   }
@@ -842,21 +901,44 @@ window.DEMO_SPEC = {
     channel.postMessage({type:'pv', pv:pvPayload(curPos)});
   }catch(e){} }
   function renderPV(idx){
-    const s=PRES[idx]||PRES[PRES.length-1];
-    document.getElementById('pvStep').textContent=s.step;
-    document.getElementById('pvEst').textContent=s.est?('\u00b7 '+s.est):'';
-    document.getElementById('pvTitle').textContent=s.title;
+    const s=PRES[presIndex(idx)]||PRES[PRES.length-1];
+    const arm  = isArmPos(idx);
+    const fire = isFirePos(idx);
+    const moveIdx = moveIndexFor(idx);
+    const m = (moveIdx>=0) ? MOVES[moveIdx] : null;
+
+    // Step label gets a phase suffix so the presenter knows which click they're on.
+    let stepLabel = s.step;
+    if(arm)  stepLabel = s.step + '  ·  ARM (next click fires)';
+    if(fire) stepLabel = s.step + '  ·  FIRING';
+    document.getElementById('pvStep').textContent = stepLabel;
+    document.getElementById('pvEst').textContent  = s.est?('\u00b7 '+s.est):'';
+    document.getElementById('pvTitle').textContent= s.title;
+
     const askWrap=document.getElementById('pvAskWrap');
-    if(s.ask){ askWrap.style.display=''; document.getElementById('pvAsk').textContent=s.ask; }
+    // Show the upcoming prompt at arm/fire (from the move's ask), or the boot cmd at pos 2.
+    let askToShow = s.ask || null;
+    if(m && (arm || fire)) askToShow = m.ask;
+    if(askToShow){ askWrap.style.display=''; document.getElementById('pvAsk').textContent=askToShow; }
     else { askWrap.style.display='none'; }
-    document.getElementById('pvSay').textContent=s.say;
+
+    // At fire, dim the spoken note · the talking should already be done.
+    const sayEl = document.getElementById('pvSay');
+    if(fire){
+      sayEl.textContent = '\u25B6  Click sent. Terminal is animating. Let it land.';
+      sayEl.style.opacity = '0.55';
+    } else {
+      sayEl.textContent = s.say;
+      sayEl.style.opacity = '1';
+    }
+
     const r=document.getElementById('pvRail'); r.innerHTML='';
-    const active = (idx>=FIRST_MOVE_POS && idx<=LAST_MOVE_POS) ? moveIndexFor(idx) : -1;
-    const done   = (idx>LAST_MOVE_POS) ? MOVES.length : Math.max(0, idx-FIRST_MOVE_POS);
+    const active = moveIndexFor(idx);
+    const done   = (idx>LAST_MOVE_POS) ? MOVES.length : firedMoveCount(idx);
     MOVES.forEach(function(m,i){
       const el=document.createElement('span'); el.className='pvr';
       if(i<done) el.classList.add('done');
-      if(i===active) el.classList.add('now');
+      if(i===active && i>=done) el.classList.add('now');
       el.textContent=(i+1)+' \u00b7 '+m.title;
       r.appendChild(el);
     });
