@@ -33,7 +33,20 @@ Do NOT use when:
 
 ## Prerequisites
 
-A `partner-profile.md` somewhere in your project, following this shape:
+The skill needs a **partner profile** to ground its work. You can provide it in any of these ways · the skill picks the richest source available and degrades gracefully.
+
+### Profile sources, in priority order
+
+| # | Source | What it gives you | What you need |
+|---|--------|-------------------|---------------|
+| 1 | **`partner-profile.md`** in your project | Explicit, your-words context. Always wins when present. | A markdown file in the shape below. |
+| 2 | **WorkIQ / Microsoft Graph signals** | The freshest signal source. Recent Teams chats, calendar, meeting notes, last-30-days emails. Derives niche, top customers, open deals from what you actually did. | A Graph or WorkIQ MCP wired into your host (e.g. `@floriscornel/teams-mcp`, `agency mcp graph`, or a custom Graph MCP). |
+| 3 | **Web fetch of your company site** | Derives niche, positioning, named accounts, recent talking points from your public marketing. Good when running for a new partner you don't have signals on yet. | Any `fetch` / web-browsing tool available in your host. |
+| 4 | **Interactive prompt** | Last resort. The agent asks the six questions, writes `partner-profile.md`, then continues. | Nothing. Always available. |
+
+The skill runs a **Step 0 · Discover profile** before Move 1: picks the best available source, derives the profile, **shows it to you for confirmation**, then proceeds.
+
+### Profile shape (used by all sources)
 
 ```markdown
 # Partner profile
@@ -47,11 +60,19 @@ A `partner-profile.md` somewhere in your project, following this shape:
 - What my team can deliver in 3 weeks: ...
 ```
 
-If you have signals in the project (customer call notes, email exports, deal logs), the skill will pick those up too. Optional.
+If you have additional signals in the project (customer call notes, email exports, deal logs, Teams transcripts), the skill picks those up too as supporting context.
 
-## The five moves
+### A note on MCPs
 
-When invoked, the skill executes these in order. Each move waits for explicit "next" before continuing · you can stop, edit context, and resume.
+The skill does NOT bundle any MCPs. It declares what kinds of tools it can use (`fetch`, `reason`, `plan`, `write`, optionally `workiq` / `graph`) and lets your host environment provide them. This keeps the skill portable across Copilot CLI, Claude Code, Cursor, and any MCP host. See [`reference/discover-profile.md`](./skill/reference/discover-profile.md) for the exact prompts the agent uses against each source tier.
+
+## The five moves (plus step 0)
+
+When invoked, the skill executes these in order. Each step waits for explicit "next" before continuing · you can stop, edit context, and resume.
+
+### Step 0 · Discover profile
+Runs first, every time. Picks the best available profile source (file > WorkIQ > web > interactive), derives the profile, and asks you to confirm or edit before moving on. Skipped if `partner-profile.md` exists AND was modified in the last 14 days.
+Output: `build-2026-gold/_profile.md` · the active profile for this run, with a one-line note on which source it came from.
 
 ### Move 1 · Pull from the source
 Tools: `fetch` against primary Microsoft blogs only (devblogs, github.blog, azure blog, bing blog, techcommunity, Foundry blog). Cross-checks against the partner profile and recent signals.
@@ -65,9 +86,9 @@ Output: `build-2026-gold/02-sorted.md` · two buckets, "Cool moonshots" vs "Mine
 Tool: `reason` + `write`.
 Output: `build-2026-gold/03-conversations.md` · three account-specific conversations: opening line, objection killed, concrete next step.
 
-### Move 4 · Build me an offer
+### Move 4 · Build me an offer + the IP
 Tool: `plan` + `write`.
-Output: `build-2026-gold/04-offer.md` · three-week fixed-price offer for the top item: name, weekly activities, deliverables, take-aways, reusable IP, price band, delivery roles.
+Output: `build-2026-gold/04-offer.md` · three-week fixed-price offer for the top item · weekly activities, customer deliverables, AND the reusable IP layer (playbook, inventory tool, agent starter pack) you carry into customer 2, 3, 4. First deal pays for itself, the rest is margin.
 
 ### Move 5 · Make me the source
 Tool: `write` with humaniser guard rails (no em dashes, no rule of three, no "leverage / unlock / transform", varied sentence rhythm).
@@ -113,12 +134,12 @@ All artefacts land in `./build-2026-gold/` inside your project root, gitignored 
 
 ```
 build-2026-gold/
+  _profile.md         # active partner profile + source it came from (Step 0)
   01-source-list.md
   02-sorted.md
   03-conversations.md
-  04-offer.md
+  04-offer.md         # offer + reusable IP layer
   05-source.md
-  _context.md         # snapshot of the partner profile used for this run
   _summary.md         # one-page summary with links to all five
 ```
 
