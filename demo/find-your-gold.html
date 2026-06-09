@@ -410,14 +410,40 @@ window.DEMO_SPEC = {
   exitSlide: {
     kick: "From the noise <b>&middot;</b> to your gold",
     h1: "Now you're the <span class=\"amber\">operator.</span>",
-    sub: "Five prompts. Any AI chat. Your business, your customers, your move. Scan the code, grab the pack, run it on your own pipeline this week."
+    sub: "Step zero plus five prompts. Any AI chat. Your business, your customers, your move. Scan the code, grab the pack, run it on your own pipeline this week."
   },
   moves: [
-    { title:"Pull from the source", est:"1 min",
-      ask:"Find Build 2026 announcements that matter for my niche. Primary blogs only. Cross-check against my recent customer signals. Cite the source.",
+    { title:"Step 0 \u00b7 Know me first", est:"1 min",
+      ask:"Read partner-profile.md if it's fresh. Otherwise pull from my Teams chats, calendar, and customer emails last 90 days. Derive the profile. Show me before we run the five moves.",
       lines:[
-        {k:"think", t:"my partner profile is loaded. niche. recent customer calls. open deals. start from there\u2026"},
-        {k:"tool", tag:"workiq", t:"read \u00b7 partner-profile.md \u00b7 12 customer calls \u00b7 8 open deals"},
+        {k:"think", t:"freshness check first. if stale, go to the signals. no guessing\u2026"},
+        {k:"tool", tag:"fs", t:"read \u00b7 partner-profile.md \u00b7 last modified 47 days ago \u00b7 stale"},
+        {k:"tool", tag:"workiq", t:"search teams + mail \u00b7 last 90 days \u00b7 niche signals"},
+        {k:"tool", tag:"calendar", t:"external meetings \u00b7 last 60 days \u00b7 customer segments"},
+        {k:"tool", tag:"workiq", t:"search teams + mail \u00b7 last 30 days \u00b7 open deals + most-asked questions"},
+        {k:"tool", tag:"reason", t:"synthesise into partner profile shape"},
+        {k:"res",  t:"profile derived \u00b7 source: WorkIQ \u00b7 4 of 6 fields auto-filled"},
+        {k:"res",  t:"2 fields need you \u00b7 biggest deal to land + what your team can deliver in 3 weeks"},
+        {k:"card", kind:"doc", data:{
+          url:"localhost / _profile.md",
+          title:"Partner profile \u00b7 derived from WorkIQ \u00b7 90-day window",
+          paras:[
+            "<b>Niche</b> &rarr; Data and AI partner for Nordic financial services.",
+            "<b>Solution areas</b> &rarr; Fabric data platform, Copilot rollouts, governed agents.",
+            "<b>Top customer segments</b> &rarr; banking (3 accounts), insurance (2), wealth management (1).",
+            "<b>Active deals</b> &rarr; Nordic Bank, Skandia, SEB, Storebrand, Lansforsakringar.",
+            "<b>Most-asked (30d)</b> &rarr; \u201cwho owns the agents once they\u2019re live?\u201d \u00b7 8 customers \u00b7 clustered.",
+            "<b>Need your input</b> &rarr; biggest deal to land + 3-week team capacity.",
+            "bar"
+          ],
+          foot:"<b>Source: WorkIQ</b> \u00b7 4 of 6 auto \u00b7 confirm or edit before move 1",
+          pill:"\u2192 ready to confirm"
+        }}
+      ]},
+    { title:"Pull from the source", est:"1 min",
+      ask:"Profile confirmed. Now find Build 2026 announcements that matter for my niche. Primary blogs only. Cross-check against my recent customer signals. Cite the source.",
+      lines:[
+        {k:"think", t:"profile is loaded. niche locked. recent signals fresh. now go find the news\u2026"},
         {k:"tool", tag:"fetch", t:"devblogs.microsoft.com/foundry \u00b7 Build 2026 recap"},
         {k:"tool", tag:"fetch", t:"github.blog \u00b7 GitHub Copilot app announcement"},
         {k:"tool", tag:"fetch", t:"azure.microsoft.com/blog \u00b7 Microsoft Discovery GA"},
@@ -527,14 +553,16 @@ window.DEMO_SPEC = {
       ]}
   ],
   notes: [
-    { step:"Setup", est:"~9 min", title:"Find your gold", ask:null,
-      say:"Thanks Lorette. You just heard the headline list. Foundry. Agent 365. Copilot app. Discovery. Scout. The catalogue this year is 400+ sessions plus everything that hit the LinkedIn feed in the last 48 hours. And I get the same question from partners every Monday after Build. Cool. But what do I actually DO with it on a customer call this week? So here's the meta move. Same Copilot CLI I use every day. I'll send an agent at the news. Tell it what my partners and customers care about. Let it sort. Nine minutes. One terminal. Five prompts. Watch what comes out the other end." },
+    { step:"Setup", est:"~10 min", title:"Find your gold", ask:null,
+      say:"Thanks Lorette. You just heard the headline list. Foundry. Agent 365. Copilot app. Discovery. Scout. The catalogue this year is 400+ sessions plus everything that hit the LinkedIn feed in the last 48 hours. And I get the same question from partners every Monday after Build. Cool. But what do I actually DO with it on a customer call this week? So here's the meta move. Same Copilot CLI I use every day. I'll send an agent at the news. Tell it what my partners and customers care about. Let it sort. One terminal. Step zero plus five prompts. Watch what comes out the other end." },
     { step:"Terminal", est:"", title:"copilot CLI", ask:null,
       say:"There it is. Same Copilot CLI I run every day. Just the prompt blinking. No prepared file. No safety net. Same tool any of you can pick up after this call." },
     { step:"Boot", est:"", title:"copilot --yolo", ask:"copilot --yolo",
-      say:"OK so I'm just going to launch it. Yolo means it won't stop and ask me for permission on every tool call. Saves us from clicking through five dialogs while you're trying to listen.\n\nThere's the command. copilot --yolo. That's literally all I type on a Tuesday morning. No flags. No config file. Same line any of you would run.\n\nAnd watch what loads. My instructions. Who I am as a partner. My niche. What customers have actually said to me the last two weeks. That's the bit that matters. The next five prompts only work because the agent already knows my world." },
+      say:"OK so I'm just going to launch it. Yolo means it won't stop and ask me for permission on every tool call. Saves us from clicking through five dialogs while you're trying to listen.\n\nThere's the command. copilot --yolo. That's literally all I type on a Tuesday morning. No flags. No config file. Same line any of you would run.\n\nAnd watch what loads. The skill. My instructions. The agent's awake but it doesn't know me yet. Step zero comes next." },
+    { step:"Step 0", est:"1 min", title:"Know me first", ask:null,
+      say:"OK step zero. Before any of the five moves, the agent needs to know me. And here is where it gets real. The skill checks for a partner-profile file first. If it's fresh, use it. If it's stale or missing, go to my Teams chats, my calendar, my customer emails for the last 90 days. WorkIQ does the heavy lifting.\n\nRead the prompt. Read the file if recent. Otherwise pull from the signals. Derive the profile. Show me before we run the five moves. No guessing. No magic.\n\nAnd there's the profile on the right. Four of six fields auto-filled from what I've actually been doing the last three months. Niche. Solution areas. Top customer segments. Active deals. The most-asked customer question · clustered from eight different conversations. Two fields still need me. The deal I most want to land, and what my team can deliver in three weeks. Because those are calls, not data. I confirm or edit, then we run the five." },
     { step:"Move 1", est:"1 min", title:"Pull from the source", ask:null,
-      say:"OK first move. Agent's loaded. It knows my niche, my open deals, what customers have been asking me. Now I tell it what to do with all that.\n\nRead it with me. Build announcements that matter for my niche. Primary blogs only. Cross-check against my own customer signals. Not a generic 'here's everything Microsoft shipped' dump.\n\nAnd there go the tool calls. Pulling the blogs one by one. Checking each one against my actual pipeline. What pops up on the right is a doc. Twelve announcements, each tagged with the blog it came from. Foundry. Copilot app. Discovery. Agent 365. The lot. All cross-checked against my own customer signals. Because if I'm betting a Friday meeting on this, I want it grounded in what I actually sell." },
+      say:"OK first move. Profile is confirmed. Agent knows my niche, my open deals, what customers have been asking me. Now I tell it what to do with all that.\n\nRead it with me. Build announcements that matter for my niche. Primary blogs only. Cross-check against my own customer signals. Not a generic 'here's everything Microsoft shipped' dump.\n\nAnd there go the tool calls. Pulling the blogs one by one. Checking each one against my actual pipeline. What pops up on the right is a doc. Twelve announcements, each tagged with the blog it came from. Foundry. Copilot app. Discovery. Agent 365. The lot. All cross-checked against my own customer signals. Because if I'm betting a Friday meeting on this, I want it grounded in what I actually sell." },
     { step:"Move 2", est:"2 min", title:"Sort: cool vs yours", ask:null,
       say:"Now the hard one. Long list of announcements. I want it cut into two columns. Cool stuff that's not for me. Stuff that changes my Monday.\n\nSort. Not summarise. Cool moonshots versus things I can act on this quarter. Brutal honesty. I want a decision, not another recap.\n\nAnd there's the split. Eight tiles on screen. Left column, the cool stuff. Solara. MAI Image. Mayo Clinic tuning. Majorana 2. Amazing. Not changing my customer call next week. Right column, the four I can act on. Copilot app. Agent 365. Foundry hosted agents. Copilot SDK. The other four sit in a middle bucket off-screen so we don't lose the point." },
     { step:"Move 3", est:"1.5 min", title:"Customer conversation", ask:null,
@@ -544,7 +572,7 @@ window.DEMO_SPEC = {
     { step:"Move 5", est:"1.5 min", title:"Make me the source", ask:null,
       say:"Last one. And this is the one that actually compounds. Stop forwarding Microsoft links to your network. Be the source yourself.\n\nLinkedIn post in my voice. Short email to one customer who asked the right question on the last call. Same Build news. Coming from me, not from Redmond.\n\nAnd there it is. Two drafts on the right. LinkedIn post in my voice, no hashtags, 180 words. Short email to Anders at Nordic Bank because he raised the ownership question on our last call. Both reference the Agent 365 sprint I just built. Because the agents aren't the differentiator. Being the person teaching this on your patch is. That's where it stops being a cool tool and starts being pipeline." },
     { step:"Next slide", est:"", title:"Now you're the operator", ask:null,
-      say:"Nine minutes. One terminal. Five prompts. From 400+ Build sessions to three customer conversations, one new partner offer, and a LinkedIn post in my voice. And the prompts are right there. Scan the code or grab the link. Five prompts. They work in any AI chat. ChatGPT, Claude, Copilot, Gemini, or the CLI if you want the whole thing as one command. Run it on your own pipeline this week." },
+      say:"Ten minutes. One terminal. Step zero plus five prompts. From 400+ Build sessions to a profile derived from my own signals, three customer conversations, one packaged offer with reusable IP, and a LinkedIn post in my voice. The prompts are right there. Scan the code or grab the link. Six prompts total. They work in any AI chat. ChatGPT, Claude, Copilot, Gemini, or the CLI if you want the whole thing as one command. Run it on your own pipeline this week." },
     { step:"The ping", est:"", title:"It pays off", ask:null,
       say:"And here's the kicker. One more click. That's a real partner answer to the kind of LinkedIn post we just drafted. From 400+ sessions to a Friday meeting with the Head of AI at a Nordic bank. That is what becoming the source looks like." }
   ],
